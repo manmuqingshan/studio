@@ -160,7 +160,7 @@ export class LVGLLabelWidget extends LVGLWidget {
         }
 
         // recolor
-        if (this.recolor && !code.isV9) {
+        if (this.recolor && !code.isLVGLVersion(["9.0", "9.1", "9.2"])) {
             code.callObjectFunction(
                 "lv_label_set_recolor",
                 code.constant("true")
