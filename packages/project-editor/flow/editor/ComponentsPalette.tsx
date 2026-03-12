@@ -148,6 +148,13 @@ export function newComponentMenuItem(
                 type = "widgets";
             }
 
+            if (
+                type == "actions" &&
+                !ProjectEditor.getProject(flow).projectTypeTraits.hasFlowSupport
+            ) {
+                return;
+            }
+
             menuItems.unshift(new MenuItem({ type: "separator" }));
 
             menuItems.unshift(

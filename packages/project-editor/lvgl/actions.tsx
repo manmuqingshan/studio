@@ -1,6 +1,5 @@
 import React from "react";
 import { computed, makeObservable, observable, runInAction } from "mobx";
-import tinycolor from "tinycolor2";
 
 import {
     registerClass,
@@ -65,7 +64,7 @@ import { Dialog, showDialog } from "eez-studio-ui/dialog";
 import { observer } from "mobx-react";
 import { SearchInput } from "eez-studio-ui/search-input";
 import { IListNode, List, ListContainer, ListItem } from "eez-studio-ui/list";
-import { getThemedColor } from "project-editor/features/style/theme";
+import { ColorFormat, ColorFormatType } from "project-editor/features/style/color-format";
 import { lvglProperties, LVGLPropertiesGroup, LVGLPropertyInfo } from "project-editor/lvgl/style-catalog";
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1112,25 +1111,32 @@ export class LVGLActionType extends EezObject {
                 }
 
                 if (styleProperty.type == PropertyType.ThemedColor) {
-                    const themedColor = getThemedColor(
-                        projectStore,
-                        value
-                    );
+                    const cf = ColorFormat.parse(value, projectStore.project);
 
-                    if (themedColor.isFromTheme) {
-                        const colorIndex = projectStore.project.colorToIndexMap.get(value);
-                        return `Flow.getThemeColor(${colorIndex})`;
-                    } else {
-                        const rgb = tinycolor(themedColor.colorValue).toRgb();
-
-                        // result is in BGR format
-                        let result = (rgb.b << 0) | (rgb.g << 8) | (rgb.r << 16) | (255 << 24);
-
-                        // signed to unsigned
-                        result = result >>> 0;
-
-                        return `${result}`;
+                    if (cf.formatType == ColorFormatType.THEME_NAME) {
+                        const colorIndex = projectStore.project.colorToIndexMap.get(cf.name);
+                        if (colorIndex != undefined) {
+                            return `Flow.getThemeColor(${colorIndex})`;
+                        } else {
+                            return "0";
+                        }
+                    } else if (cf.formatType == ColorFormatType.DARKEN || cf.formatType == ColorFormatType.LIGHTEN) {
+                        if (cf.innerColor!.formatType == ColorFormatType.THEME_NAME) {
+                            const colorIndex = projectStore.project.colorToIndexMap.get(cf.innerColor!.name);
+                            if (colorIndex != undefined) {
+                                let level = cf.levelFormat == "decimal" ? cf.level : Math.min(Math.max(Math.round(cf.level * 255 / 100), 0), 255);
+                                if (cf.formatType == ColorFormatType.DARKEN) {
+                                    return `LVGL.colorDarken(Flow.getThemeColor(${colorIndex}), ${level})`;
+                                } else {
+                                    return `LVGL.colorLighten(Flow.getThemeColor(${colorIndex}), ${level})`;
+                                }
+                            } else {
+                                return "0";
+                            }
+                        }
                     }
+
+                    return cf.getHexNumString();
                 }
 
                 if (styleProperty.name == "text_font" || styleProperty.type == PropertyType.ObjectReference) {

@@ -1,7 +1,7 @@
 import React from "react";
 import { observable, makeObservable } from "mobx";
 
-import { isValid } from "eez-studio-shared/color";
+import { ColorFormat } from "project-editor/features/style/color-format";
 
 import {
     ClassInfo,
@@ -45,7 +45,6 @@ import {
     isFlowProperty,
     makeExpressionProperty
 } from "project-editor/flow/component";
-import { getThemedColor } from "project-editor/features/style/theme";
 import type { LVGLCode } from "project-editor/lvgl/to-lvgl-code";
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -493,12 +492,8 @@ export class LVGLMeterIndicatorNeedleLine extends LVGLMeterIndicator {
                 }
             }
 
-            const colorValue = getThemedColor(
-                ProjectEditor.getProjectStore(indicator),
-                indicator.color
-            ).colorValue;
-
-            if (!isValid(colorValue)) {
+            const project = ProjectEditor.getProject(indicator);
+            if (!ColorFormat.isValid(indicator.color, project)) {
                 messages.push(
                     new Message(
                         MessageType.ERROR,
@@ -704,11 +699,9 @@ export class LVGLMeterIndicatorScaleLines extends LVGLMeterIndicator {
                 }
             }
 
-            const colorStartValue = getThemedColor(
-                ProjectEditor.getProjectStore(indicator),
-                indicator.colorStart
-            ).colorValue;
-            if (!isValid(colorStartValue)) {
+            const project = ProjectEditor.getProject(indicator);
+
+            if (!ColorFormat.isValid(indicator.colorStart, project)) {
                 messages.push(
                     new Message(
                         MessageType.ERROR,
@@ -718,12 +711,7 @@ export class LVGLMeterIndicatorScaleLines extends LVGLMeterIndicator {
                 );
             }
 
-            const colorEndValue = getThemedColor(
-                ProjectEditor.getProjectStore(indicator),
-                indicator.colorEnd
-            ).colorValue;
-
-            if (!isValid(colorEndValue)) {
+            if (!ColorFormat.isValid(indicator.colorEnd, project)) {
                 messages.push(
                     new Message(
                         MessageType.ERROR,
@@ -951,11 +939,8 @@ export class LVGLMeterIndicatorArc extends LVGLMeterIndicator {
                 }
             }
 
-            const colorValue = getThemedColor(
-                ProjectEditor.getProjectStore(indicator),
-                indicator.color
-            ).colorValue;
-            if (!isValid(colorValue)) {
+            const project = ProjectEditor.getProject(indicator);
+            if (!ColorFormat.isValid(indicator.color, project)) {
                 messages.push(
                     new Message(
                         MessageType.ERROR,
@@ -1200,11 +1185,9 @@ class LVGLMeterScale extends EezObject {
                 }
             }
 
-            const minorTickColorValue = getThemedColor(
-                ProjectEditor.getProjectStore(scale),
-                scale.minorTickColor
-            ).colorValue;
-            if (!isValid(minorTickColorValue)) {
+            const project = ProjectEditor.getProject(scale);
+
+            if (!ColorFormat.isValid(scale.minorTickColor, project)) {
                 messages.push(
                     new Message(
                         MessageType.ERROR,
@@ -1214,11 +1197,7 @@ class LVGLMeterScale extends EezObject {
                 );
             }
 
-            const majorTickColorValue = getThemedColor(
-                ProjectEditor.getProjectStore(scale),
-                scale.majorTickColor
-            ).colorValue;
-            if (!isValid(majorTickColorValue)) {
+            if (!ColorFormat.isValid(scale.majorTickColor, project)) {
                 messages.push(
                     new Message(
                         MessageType.ERROR,

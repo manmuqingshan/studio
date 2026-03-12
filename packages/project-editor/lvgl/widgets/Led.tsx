@@ -12,8 +12,7 @@ import {
 } from "../expression-property";
 import { specificGroup } from "project-editor/ui-components/PropertyGrid/groups";
 import { ProjectEditor } from "project-editor/project-editor-interface";
-import { getThemedColor } from "project-editor/features/style/theme";
-import { isValid } from "eez-studio-shared/color";
+import { ColorFormat } from "project-editor/features/style/color-format";
 import { getChildOfObject, Message } from "project-editor/store";
 import type { LVGLCode } from "project-editor/lvgl/to-lvgl-code";
 
@@ -66,12 +65,8 @@ export class LVGLLedWidget extends LVGLWidget {
 
         check(object: LVGLLedWidget, messages) {
             if (object.colorType == "literal") {
-                const colorValue = getThemedColor(
-                    ProjectEditor.getProjectStore(object),
-                    object.color
-                ).colorValue;
-
-                if (!isValid(colorValue)) {
+                const projectStore = ProjectEditor.getProjectStore(object);
+                if (!ColorFormat.isValid(object.color, projectStore.project)) {
                     messages.push(
                         new Message(
                             MessageType.ERROR,
@@ -203,8 +198,6 @@ export class LVGLLedWidget extends LVGLWidget {
 
                 code.ifNotEqual(new_val, cur_val, () => {
                     code.tickChangeStart();
-
-                    console.log(new_val, cur_val);
 
                     code.callObjectFunction(
                         "lv_led_set_color",

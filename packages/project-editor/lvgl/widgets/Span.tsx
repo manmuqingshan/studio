@@ -1,7 +1,7 @@
 import React from "react";
 import { observable, makeObservable } from "mobx";
 
-import { isValid } from "eez-studio-shared/color";
+import { ColorFormat } from "project-editor/features/style/color-format";
 
 import {
     ClassInfo,
@@ -26,7 +26,6 @@ import {
     BUILT_IN_FONTS,
     text_font_property_info
 } from "project-editor/lvgl/style-catalog";
-import { getThemedColor } from "project-editor/features/style/theme";
 import type { LVGLCode } from "project-editor/lvgl/to-lvgl-code";
 import { isFlowProperty } from "project-editor/flow/component";
 import { checkExpression } from "project-editor/flow/expression";
@@ -171,12 +170,8 @@ export class LVGLSpan extends EezObject {
             }
 
             if (span.textColor) {
-                const colorValue = getThemedColor(
-                    ProjectEditor.getProjectStore(span),
-                    span.textColor
-                ).colorValue;
-
-                if (!isValid(colorValue)) {
+                const project = ProjectEditor.getProject(span);
+                if (!ColorFormat.isValid(span.textColor, project)) {
                     messages.push(
                         new Message(
                             MessageType.ERROR,

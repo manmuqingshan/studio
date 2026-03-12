@@ -15,6 +15,7 @@ import { Section, getAncestorOfType } from "project-editor/store";
 import type { LVGLUserWidgetWidget, LVGLWidget } from "./widgets";
 import type { Assets } from "project-editor/build/assets";
 import { isDev } from "eez-studio-shared/util-electron";
+import { getColorRGB } from "eez-studio-shared/color";
 import { writeTextFile, writeBinaryData } from "project-editor/build/build";
 import type { LVGLStyle } from "project-editor/lvgl/style";
 import {
@@ -29,13 +30,13 @@ import {
 import { sourceRootDir } from "eez-studio-shared/util";
 import { getSelectorBuildCode } from "project-editor/lvgl/style-helper";
 import type { LVGLGroup } from "./groups";
-import tinycolor from "tinycolor2";
 import { GENERATED_NAME_PREFIX } from "./identifiers";
 import { escapeCString, isGeometryControlledByParent } from "./widget-common";
 import { BuildLVGLCode } from "project-editor/lvgl/to-lvgl-code";
 import { cleanupSourceFile } from "project-editor/build/cleanup-c-source-files";
 import { BUILT_IN_FONTS } from "project-editor/lvgl/style-catalog";
 import { visitObjects } from "project-editor/core/search";
+import { ColorFormat, ColorFormatType } from "project-editor/features/style/color-format";
 
 interface Identifiers {
     identifiers: string[];
@@ -816,28 +817,55 @@ export class LVGLBuild extends Build {
     }
 
     getColorAccessor(color: string, themeIndex: string) {
-        let colorValue;
-        if (color.startsWith("#")) {
-            colorValue = color;
-        } else {
-            const colorIndex = this.project.colorToIndexMap.get(color);
+        const cf = ColorFormat.parse(color, this.project);
+
+        if (cf.formatType == ColorFormatType.THEME_NAME) {
+            const colorIndex = this.project.colorToIndexMap.get(cf.name);
             if (colorIndex != undefined) {
                 return {
-                    colorAccessor: `theme_colors[${themeIndex}][${colorIndex}]`,
+                    colorAccessor: `lv_color_hex(theme_colors[${themeIndex}][${colorIndex}])`,
                     fromTheme: true
                 };
             }
-            colorValue = color;
+        } else if (cf.formatType == ColorFormatType.DARKEN || cf.formatType == ColorFormatType.LIGHTEN) {
+            let innerColor;
+            let fromTheme;
+
+            if (cf.innerColor!.formatType == ColorFormatType.THEME_NAME) {
+                const colorIndex = this.project.colorToIndexMap.get(cf.innerColor!.name);
+                if (colorIndex != undefined) {
+                    innerColor = `lv_color_hex(theme_colors[${themeIndex}][${colorIndex}])`;
+                    fromTheme = true;
+                }
+            }
+
+            if (innerColor == undefined) {
+                innerColor = cf.innerColor!.getHexNumString();
+                fromTheme = false;
+            }
+
+            let colorAccessor;
+            let level = cf.levelFormat == "decimal" ? cf.level : Math.min(Math.max(Math.round(cf.level * 255 / 100), 0), 255);
+            if (cf.formatType == ColorFormatType.DARKEN) {
+                colorAccessor = `lv_color_darken(lv_color_hex(${innerColor}), ${level})`;
+            } else {
+                colorAccessor = `lv_color_lighten(lv_color_hex(${innerColor}), ${level})`;
+            }
+
+            return {
+                colorAccessor,
+                fromTheme
+            }
         }
 
         return {
-            colorAccessor: this.getColorHexStr(colorValue),
+            colorAccessor: `lv_color_hex(${cf.getHexNumString()})`,
             fromTheme: false
         };
     }
 
     getColorHexStr(colorValue: string) {
-        const rgb = tinycolor(colorValue).toRgb();
+        const rgb = getColorRGB(colorValue);
 
         // result is in BGR format
         let colorNum =

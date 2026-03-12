@@ -1,7 +1,7 @@
 import { observable, computed, makeObservable } from "mobx";
-import tinycolor from "tinycolor2";
 
 import { capitalize } from "eez-studio-shared/string";
+import { getColorRGB, rgbToHsl, hslToRgb, rgbToHexString } from "eez-studio-shared/color";
 import { UNITS } from "eez-studio-shared/units";
 
 import type { IAxisModel, ZoomMode } from "eez-studio-ui/chart/chart";
@@ -111,10 +111,11 @@ export class WaveformAxisModel implements IAxisModel {
             this.waveform.waveformDefinition.color;
         if (color) {
             // make color a little bit darker to look better on white background
-            const c = tinycolor(color);
-            const hsl = c.toHsl();
+            const rgb = getColorRGB(color);
+            const hsl = rgbToHsl(rgb.r, rgb.g, rgb.b);
             hsl.l = hsl.l - 0.15;
-            return tinycolor(hsl).toHexString();
+            const result = hslToRgb(hsl.h, hsl.s, hsl.l);
+            return rgbToHexString(result.r, result.g, result.b);
         }
 
         return this.unit.colorInverse;

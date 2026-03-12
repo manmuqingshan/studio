@@ -1,5 +1,3 @@
-import tinycolor from "tinycolor2";
-
 import {
     EezClass,
     IObjectClassInfo,
@@ -7,6 +5,7 @@ import {
     isProperSubclassOf
 } from "project-editor/core/object";
 import { ProjectEditor } from "project-editor/project-editor-interface";
+import { mostReadable } from "eez-studio-shared/color";
 import type { ProjectStore } from "project-editor/store";
 
 export function getAllComponentClasses(
@@ -258,9 +257,7 @@ export function getComponentVisualData(
 
         titleStyle = {
             backgroundColor,
-            color: tinycolor
-                .mostReadable(backgroundColor, ["#fff", "0x333"])
-                .toHexString()
+            color: mostReadable(backgroundColor, ["#fff", "#333"])
         };
     }
 

@@ -49,6 +49,12 @@ export function buildExpression(
 
     const buildExpressionNode = (node: ExpressionNode): string => {
         if (node.type == "Literal") {
+            if (node.valueType == "float") {
+                if (Number.isInteger(node.value)) {
+                    return node.value + ".0f";    
+                }
+                return node.value + "f";
+            }
             return JSON.stringify(node.value);
         }
 
@@ -121,10 +127,10 @@ export function buildExpression(
                 n.operator == "+" &&
                 ((n.left.valueType == "string" &&
                     n.right.valueType == "string") ||
-                    (n.left.valueType == "integer" &&
+                    ((n.left.valueType == "integer" || n.left.valueType == "float" || n.left.valueType == "double") &&
                         n.right.valueType == "string") ||
                     (n.left.valueType == "string" &&
-                        n.right.valueType == "integer"));
+                        (n.right.valueType == "integer" || n.right.valueType == "float" || n.right.valueType == "double")));
 
             if (isStringConcat(node)) {
                 // Flatten concatenation chain into a single String_format call
@@ -186,6 +192,9 @@ export function buildExpression(
                     } else if (part.valueType == "integer") {
                         formatStr += "%d";
                         args.push(buildExpressionNode(part));
+                    } else if (part.valueType == "float" || part.valueType == "double") {
+                        formatStr += "%.4g";
+                        args.push(buildExpressionNode(part));
                     } else {
                         formatStr += "%s";
                         args.push(buildExpressionNode(part));
@@ -211,17 +220,23 @@ export function buildExpression(
             let alternate = buildExpressionNode(node.alternate);
 
             if (
-                node.consequent.valueType == "string" &&
-                node.alternate.valueType == "integer"
+                node.consequent.valueType == "string"
             ) {
-                alternate = `String_format(&eezgui_ctx, "%d", ${alternate})`;
+                if (node.alternate.valueType == "integer") {
+                    alternate = `String_format(&eezgui_ctx, "%d", ${alternate})`;
+                } else if (node.alternate.valueType == "float" || node.alternate.valueType == "double") {
+                    alternate = `String_format(&eezgui_ctx, "%.4g", ${alternate})`;
+                }
             }
 
             if (
-                node.consequent.valueType == "integer" &&
                 node.alternate.valueType == "string"
             ) {
-                consequent = `String_format(&eezgui_ctx, "%d", ${consequent})`;
+                if (node.consequent.valueType == "integer") {
+                    consequent = `String_format(&eezgui_ctx, "%d", ${consequent})`;
+                } else if (node.consequent.valueType == "float" || node.consequent.valueType == "double") {
+                    consequent = `String_format(&eezgui_ctx, "%.4g", ${consequent})`;
+                }
             }
 
             return `(${buildExpressionNode(node.test)} ? ${consequent} : ${alternate})`;
@@ -256,8 +271,12 @@ export function buildExpression(
         result = result.substring(1, result.length - 1);
     }
 
-    if (targetType == "string" && rootNode.valueType == "integer") {
-        return `String_format(&eezgui_ctx, "%d", ${result})`;
+    if (targetType == "string") {
+        if (rootNode.valueType == "integer") {
+            return `String_format(&eezgui_ctx, "%d", ${result})`;
+        } else if (rootNode.valueType == "float" || rootNode.valueType == "double") {
+            return `String_format(&eezgui_ctx, "%.4g", ${result})`;
+        }
     }
 
     if (resultType) {
@@ -644,7 +663,7 @@ function findValueTypeInExpressionNode(
             ) {
                 node.valueType = "integer";
             } else {
-                node.valueType = "double";
+                node.valueType = "float";
             }
         } else if (typeof node.value === "string") {
             node.valueType = "string";

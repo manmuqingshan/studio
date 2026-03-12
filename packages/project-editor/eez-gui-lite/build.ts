@@ -1,8 +1,8 @@
 import fs from "fs";
 import { resolve } from "path";
-import tinycolor from "tinycolor2";
 
 import { isDev, writeTextFile } from "eez-studio-shared/util-electron";
+import { getColorRGB } from "eez-studio-shared/color";
 
 import { Assets } from "project-editor/build/assets";
 import { Build, NamingConvention, getName } from "project-editor/build/helper";
@@ -158,7 +158,7 @@ export class BuildEezGuiLite {
             return;
         }
 
-        const rgb = tinycolor(colorValue).toRgb();
+        const rgb = getColorRGB(colorValue);
         let colorNum =
             (rgb.b << 0) | (rgb.g << 8) | (rgb.r << 16) | (255 << 24);
         colorNum = colorNum >>> 0;
@@ -184,7 +184,7 @@ export class BuildEezGuiLite {
             return `COLOR_${getName("", color.name, NamingConvention.UnderscoreUpperCase)}`;
         }
 
-        const rgb = tinycolor(colorValue).toRgb();
+        const rgb = getColorRGB(colorValue);
         let colorNum =
             (rgb.b << 0) | (rgb.g << 8) | (rgb.r << 16) | (255 << 24);
         colorNum = colorNum >>> 0;
@@ -610,7 +610,7 @@ export class BuildEezGuiLite {
                     theme.objID,
                     color.objID
                 );
-                const rgb = tinycolor(colorValue).toRgb();
+                const rgb = getColorRGB(colorValue);
                 const r = rgb.r.toString(16).padStart(2, "0");
                 const g = rgb.g.toString(16).padStart(2, "0");
                 const b = rgb.b.toString(16).padStart(2, "0");
@@ -625,7 +625,7 @@ export class BuildEezGuiLite {
 
             for (let i = 0; i < this.nonThemeColors.length; i++) {
                 const colorHex = this.nonThemeColors[i];
-                const rgb = tinycolor("#" + colorHex.substring(4)).toRgb();
+                const rgb = getColorRGB("#" + colorHex.substring(4));
                 build.line(
                     `EEZGUI_MAKE_COLOR(0x${rgb.r.toString(16).padStart(2, "0")}, 0x${rgb.g.toString(16).padStart(2, "0")}, 0x${rgb.b.toString(16).padStart(2, "0")}), // _COLOR_NON_THEME_${i + 1}`
                 );

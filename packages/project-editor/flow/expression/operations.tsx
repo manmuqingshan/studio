@@ -1468,6 +1468,34 @@ export const builtInFunctions: {
             return "integer";
         },
         enabled: projectStore => projectStore.projectTypeTraits.isLVGL
+    },
+
+    "LVGL.colorDarken": {
+        operationIndex: 91,
+        arity: 2,
+        args: ["color", "level"],
+        eval: (
+            expressionContext: IExpressionContext | undefined,
+            ...args: any[]
+        ) => 0,
+        getValueType: (...args: ValueType[]) => {
+            return "integer";
+        },
+        enabled: projectStore => projectStore.projectTypeTraits.isLVGL
+    },
+
+    "LVGL.colorLighten": {
+        operationIndex: 92,
+        arity: 2,
+        args: ["color", "level"],
+        eval: (
+            expressionContext: IExpressionContext | undefined,
+            ...args: any[]
+        ) => 0,
+        getValueType: (...args: ValueType[]) => {
+            return "integer";
+        },
+        enabled: projectStore => projectStore.projectTypeTraits.isLVGL
     }
 };
 

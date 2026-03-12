@@ -930,6 +930,9 @@ export class BuildLVGLCode implements LVGLCode {
     }
 
     color(color: string | number) {
+        if (typeof color == "string" && color.startsWith("lv_color")) {
+            return color;
+        }
         return `lv_color_hex(${color})`;
     }
 

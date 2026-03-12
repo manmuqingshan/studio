@@ -5,9 +5,9 @@ import {
     observable,
     runInAction
 } from "mobx";
-import tinycolor from "tinycolor2";
 
 import type { IWasmFlowRuntime } from "eez-studio-types";
+import { getColorRGB } from "eez-studio-shared/color";
 
 import { ProjectEditor } from "project-editor/project-editor-interface";
 import {
@@ -620,8 +620,7 @@ export class EezGuiLiteRuntime {
                 );
             }
 
-            const tc = tinycolor(colorValue);
-            const rgb = tc.toRgb();
+            const rgb = getColorRGB(colorValue);
             this.colorRgbs.push({ r: rgb.r, g: rgb.g, b: rgb.b });
         }
         return colorIndex;

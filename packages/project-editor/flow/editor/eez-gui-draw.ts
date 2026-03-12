@@ -1,5 +1,3 @@
-import tinycolor from "tinycolor2";
-
 import { getColorRGB, to16bitsColor } from "eez-studio-shared/color";
 
 import { findBitmap } from "project-editor/project/project";
@@ -202,8 +200,8 @@ export function drawGlyph(
     if (width > 0 && height > 0) {
         let i = 0;
         const offset = (MAX_GLYPH_WIDTH - width) * 4;
-        const fgColorRgb = tinycolor(fgColor).toRgb();
-        const bgColorRgb = tinycolor(bgColor).toRgb();
+        const fgColorRgb = getColorRGB(fgColor);
+        const bgColorRgb = getColorRGB(bgColor);
         const pixelArray = glyphBitmap.pixelArray;
         if (pixelArray) {
             const project = ProjectEditor.getProject(font);
@@ -288,8 +286,8 @@ export function drawGlyph2(encoding: number, fontExtract: IFontExtract) {
             const pixelData = pixelImageData.data;
 
             let i = 0;
-            const fgColorRgb = tinycolor(fgColor).toRgb();
-            const bgColorRgb = tinycolor(bgColor).toRgb();
+            const fgColorRgb = getColorRGB(fgColor);
+            const bgColorRgb = getColorRGB(bgColor);
             const pixelArray = glyph.glyphBitmap.pixelArray;
             if (pixelArray) {
                 if (font.bpp === 8) {

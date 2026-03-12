@@ -1,6 +1,5 @@
-import tinycolor from "tinycolor2";
-
 import { clamp } from "eez-studio-ui/chart/clamp";
+import { addAlphaToColor } from "eez-studio-shared/color";
 
 import type {
     IWaveformRenderJobSpecification,
@@ -512,8 +511,4 @@ function genRandomOffsets(K: number) {
         offsets[b] = temp;
     }
     return offsets;
-}
-
-function addAlphaToColor(color: string, alpha: number) {
-    return tinycolor(color).setAlpha(alpha).toRgbString();
 }
