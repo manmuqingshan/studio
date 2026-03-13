@@ -315,14 +315,16 @@ export abstract class LVGLPageRuntime {
             
             if (!font.lvglUseFreeType) {
                 cashedFont = this.fontsCache.get(font);
-                if (!cashedFont || cashedFont.lvglBinFile != font.lvglBinFile) {
+
+                const lvglBinFile = font.getLvglBinFile();
+
+                if (!cashedFont || cashedFont.lvglBinFile != lvglBinFile) {
                     if (cashedFont) {
                         this.wasm._lvglFreeFont(cashedFont.fontPtr);
                         this.fontsCache.delete(font);
                         this.fontAddressToFont.delete(cashedFont.fontPtr);
                     }
 
-                    const lvglBinFile = font.lvglBinFile;
                     if (lvglBinFile) {
                         const bin = Buffer.from(lvglBinFile, "base64");
 

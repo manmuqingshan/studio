@@ -1,5 +1,5 @@
 import type {
-    Params,
+    ExtractFontParams,
     FontProperties,
     GlyphProperties,
     IFontExtract
@@ -37,7 +37,7 @@ export class ExtractFont implements IFontExtract {
     fontProperties: FontProperties;
 
     // size is in pt's
-    constructor(private params: Params) {}
+    constructor(private params: ExtractFontParams) {}
 
     async start() {
         if (!wasmModule) {

@@ -3127,7 +3127,7 @@ ${source}`;
                             "binary" &&
                         !font.lvglUseFreeType
                     ) {
-                        const lvglBinaryFileBase64 = font.lvglBinFile;
+                        const lvglBinaryFileBase64 = await font.getLvglBinFileAsync();
                         const lvglBinaryFile = lvglBinaryFileBase64
                             ? Buffer.from(lvglBinaryFileBase64, "base64")
                             : undefined;

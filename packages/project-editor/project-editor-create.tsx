@@ -40,7 +40,7 @@ import {
 
 import { Page } from "project-editor/features/page/page";
 import { Widget } from "project-editor/flow/component";
-import { Glyph, rebuildLvglFonts } from "project-editor/features/font/font";
+import { Glyph } from "project-editor/features/font/font";
 import { Flow, FlowFragment } from "project-editor/flow/flow";
 import { ConnectionLine } from "project-editor/flow/connection-line";
 import { ComponentGroup } from "project-editor/flow/component-group";
@@ -223,7 +223,6 @@ export async function createProjectEditor(
         getComponent,
         getWidget,
         getWidgetParent,
-        rebuildLvglFonts,
         getBitmapData,
         migrateProjectVersion,
         migrateProjectType,

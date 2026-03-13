@@ -16,7 +16,7 @@ import {
     FontRenderingEngine,
     IFontExtract,
     createFontExtract,
-    Params
+    ExtractFontParams
 } from "project-editor/features/font/font-extract";
 import { ProjectContext } from "project-editor/project/context";
 import { IFieldComponentProps } from "eez-studio-ui/generic-dialog";
@@ -37,7 +37,7 @@ export const GlyphSelectFieldType = observer(
         static contextType = ProjectContext;
         declare context: React.ContextType<typeof ProjectContext>;
 
-        params: Params | undefined;
+        params: ExtractFontParams | undefined;
         fontExtract: IFontExtract | undefined;
         selectedEncoding = observable.box<number | undefined>();
         isLoading: boolean;

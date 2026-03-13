@@ -3,7 +3,7 @@ import { load, parse, Font as OpenTypeFont } from "opentype.js";
 
 import { toArrayBuffer } from "project-editor/features/font/utils";
 import type {
-    Params,
+    ExtractFontParams,
     FontProperties,
     GlyphProperties,
     IFontExtract
@@ -20,7 +20,7 @@ export class ExtractFont implements IFontExtract {
     fontProperties: FontProperties;
     allEncodings: number[];
 
-    constructor(private params: Params) { }
+    constructor(private params: ExtractFontParams) { }
 
     async start() {
         return new Promise<void>((resolve, reject) => {

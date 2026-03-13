@@ -299,6 +299,8 @@ export interface PropertyInfo {
 
     showArrayCollapsedByDefaultInPropertyGrid?: boolean;
     hideElementIndexInPropertyGrid?: boolean;
+
+    noColSpanForArray?: boolean;
 }
 
 export type InheritedValue =

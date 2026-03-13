@@ -54,7 +54,16 @@ export interface EncodingRange {
     mapped_from?: number;
 }
 
-export interface Params {
+export interface AdditionalFontSourceParams {
+    absoluteFilePath: string;
+    embeddedFontFile?: string;
+    relativeFilePath: string;
+    size: number;
+    encodings?: EncodingRange[];
+    symbols?: string;
+}
+
+export interface ExtractFontParams {
     name?: string;
     absoluteFilePath: string;
     embeddedFontFile?: string;
@@ -73,6 +82,7 @@ export interface Params {
     lvglInclude?: string;
     opts_string?: string;
     lv_fallback?: string;
+    additionalSources?: AdditionalFontSourceParams[];
 }
 
 export interface IFontExtract {
@@ -84,7 +94,7 @@ export interface IFontExtract {
     allEncodings: number[];
 }
 
-export async function createFontExtract(params: Params): Promise<IFontExtract> {
+export async function createFontExtract(params: ExtractFontParams): Promise<IFontExtract> {
     let renderingEngineModule;
 
     if (params.renderingEngine == "freetype") {
@@ -104,7 +114,7 @@ export async function createFontExtract(params: Params): Promise<IFontExtract> {
     return new renderingEngineModule.ExtractFont(params);
 }
 
-export async function extractFont(params: Params) {
+export async function extractFont(params: ExtractFontParams) {
     const extractFont = await createFontExtract(params);
     try {
         await extractFont.start();

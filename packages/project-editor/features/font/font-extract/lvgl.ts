@@ -1,5 +1,5 @@
 import type {
-    Params,
+    ExtractFontParams,
     FontProperties,
     GlyphProperties,
     IFontExtract
@@ -18,7 +18,7 @@ export class ExtractFont implements IFontExtract {
     allEncodings: number[];
     fontData: any;
 
-    constructor(private params: Params) {}
+    constructor(private params: ExtractFontParams) {}
 
     async start() {
         let source_bin = this.params.embeddedFontFile
@@ -36,7 +36,7 @@ export class ExtractFont implements IFontExtract {
 
         const symbols = this.params.symbols ?? "";
 
-        const font = [
+        const font: any[] = [
             {
                 source_path: this.params.absoluteFilePath,
                 source_bin,
@@ -48,6 +48,38 @@ export class ExtractFont implements IFontExtract {
                 ]
             }
         ];
+
+        if (this.params.additionalSources) {
+            for (const additionalSource of this.params.additionalSources) {
+                const addSourceBin = additionalSource.embeddedFontFile
+                    ? Buffer.from(additionalSource.embeddedFontFile, "base64")
+                    : fs.readFileSync(additionalSource.absoluteFilePath);
+
+                const addRange: number[] = [];
+                if (additionalSource.encodings) {
+                    additionalSource.encodings.map(encodingRange =>
+                        addRange.push(
+                            encodingRange.from,
+                            encodingRange.to,
+                            encodingRange.mapped_from ?? encodingRange.from
+                        )
+                    );
+                }
+
+                const addSymbols = additionalSource.symbols ?? "";
+
+                font.push({
+                    source_path: additionalSource.absoluteFilePath,
+                    source_bin: addSourceBin,
+                    ranges: [
+                        {
+                            range: addRange,
+                            symbols: addSymbols
+                        }
+                    ]
+                });
+            }
+        }
 
         const output = getName(
             "ui_font_",

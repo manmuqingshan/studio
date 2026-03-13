@@ -150,7 +150,7 @@ export const PropertyGrid = observer(
                         !propertyInfo.propertyGridCollapsableDefaultPropertyName)) ||
                 propertyInfo.propertyGridRowComponent ||
                 propertyInfo.propertyGridFullRowComponent ||
-                propertyInfo.type === PropertyType.Array;
+                (propertyInfo.type === PropertyType.Array && !propertyInfo.noColSpanForArray);
 
             const propertyReadOnly = isAnyPropertyReadOnly(
                 objects,

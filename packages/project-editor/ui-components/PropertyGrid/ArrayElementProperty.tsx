@@ -251,7 +251,7 @@ export const ArrayProperty = observer(
 
             const toolbar = (
                 <div className="d-flex justify-content-between EezStudio_ArrayPropertyToolbar">
-                    <PropertyName {...this.props} />
+                    {this.props.propertyInfo.noColSpanForArray ? <div>&nbsp;</div> : <PropertyName {...this.props} />}
                     <Toolbar>{buttons}</Toolbar>
                 </div>
             );
@@ -1291,7 +1291,7 @@ const ArrayElementProperty = observer(
                         </div>
                     );
                 } else {
-                    const propertyName = getObjectPropertyDisplayName(
+                    const propertyName = propertyInfo.propertyGridFullRowComponent ? "" : getObjectPropertyDisplayName(
                         object,
                         propertyInfo
                     );

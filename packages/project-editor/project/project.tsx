@@ -463,21 +463,6 @@ export class Build extends EezObject {
             if (jsObject.fileSystemPath == undefined) {
                 jsObject.fileSystemPath = "";
             }
-        },
-
-        updateObjectValueHook: (build: Build, values: Partial<Build>) => {
-            const projectStore = getProjectStore(build);
-            if (
-                projectStore.projectTypeTraits.isLVGL &&
-                values.lvglInclude != undefined &&
-                build.lvglInclude != values.lvglInclude
-            ) {
-                ProjectEditor.rebuildLvglFonts(
-                    projectStore,
-                    projectStore.project.settings.general.lvglVersion,
-                    values.lvglInclude
-                );
-            }
         }
     };
 
@@ -1275,21 +1260,6 @@ export class General extends EezObject {
 
             if (jsObject.embedFonts == undefined) {
                 jsObject.embedFonts = true;
-            }
-        },
-
-        updateObjectValueHook: (general: General, values: Partial<General>) => {
-            const projectStore = getProjectStore(general);
-            if (
-                projectStore.projectTypeTraits.isLVGL &&
-                values.lvglVersion != undefined &&
-                general.lvglVersion != values.lvglVersion
-            ) {
-                ProjectEditor.rebuildLvglFonts(
-                    projectStore,
-                    values.lvglVersion,
-                    projectStore.project.settings.build.lvglInclude
-                );
             }
         }
     };

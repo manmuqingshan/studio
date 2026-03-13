@@ -35,8 +35,7 @@ import type {
     checkProperty
 } from "project-editor/flow/component";
 import type {
-    Glyph,
-    rebuildLvglFonts
+    Glyph
 } from "project-editor/features/font/font";
 import type { Flow, FlowFragment } from "project-editor/flow/flow";
 import type { ConnectionLine } from "project-editor/flow/connection-line";
@@ -180,7 +179,6 @@ export interface IProjectEditor {
     getComponent: typeof getComponent;
     getWidget: typeof getWidget;
     getWidgetParent: typeof getWidgetParent;
-    rebuildLvglFonts: typeof rebuildLvglFonts;
     getBitmapData: typeof getBitmapData;
     migrateProjectVersion: typeof migrateProjectVersion;
     migrateProjectType: typeof migrateProjectType;

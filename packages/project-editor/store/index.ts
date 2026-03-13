@@ -533,8 +533,6 @@ export class ProjectStore {
             this.startSearch();
         }
 
-        this.dispose5 = autorun(() => this.typesStore.reset());
-
         this.dispose3 = autorun(
             () => {
                 // check the project in the background
@@ -549,6 +547,8 @@ export class ProjectStore {
                 delay: 100
             }
         );
+
+        this.dispose5 = autorun(() => this.typesStore.reset());
     }
 
     get title() {
