@@ -2221,7 +2221,8 @@ export class Font extends EezObject {
             getAllGlyphs: true,
             lvglVersion,
             lvglInclude,
-            additionalSources: this.getAdditionalSourcesParams(projectStore)
+            additionalSources: this.getAdditionalSourcesParams(projectStore),
+            noSourceFile: true
         };
     }
 
@@ -2234,7 +2235,6 @@ export class Font extends EezObject {
     }
 
     async buildLvglBinFile(extractFontParams: ExtractFontParams) {
-        console.log("buildLvglBinFile", extractFontParams.createGlyphs);
         try {
             const result = await extractFont(extractFontParams);
 
@@ -2266,12 +2266,10 @@ export class Font extends EezObject {
         const currentExtractFontParams = this._lvglExtractFontParams;
 
         if (
-            !this._lvglBinFile ||
             !this._lvglBinFileExtractFontParams ||
             this._lvglBinFileExtractFontParams != currentExtractFontParams
         ) {
             this._lvglBinFileExtractFontParams = currentExtractFontParams;
-
             setTimeout(async () => {
                 const lvglBinFile = currentExtractFontParams
                     ? await this.buildLvglBinFile(currentExtractFontParams)
@@ -2290,7 +2288,6 @@ export class Font extends EezObject {
         const currentExtractFontParams = this._lvglExtractFontParams;
 
         if (
-            !this._lvglBinFile ||
             !this._lvglBinFileExtractFontParams ||
             this._lvglBinFileExtractFontParams != currentExtractFontParams
         ) {
@@ -2374,7 +2371,7 @@ export class Font extends EezObject {
             bpp: this.bpp,
             size: this.source!.size!,
             threshold: this.threshold,
-            createGlyphs: true,
+            createGlyphs: false,
             encodings,
             symbols,
             createBlankGlyphs: false,
@@ -2384,7 +2381,8 @@ export class Font extends EezObject {
             lvglInclude: projectStore.project.settings.build.lvglInclude,
             opts_string,
             lv_fallback: this.lvglFallbackFont,
-            additionalSources: this.getAdditionalSourcesParams(projectStore)
+            additionalSources: this.getAdditionalSourcesParams(projectStore),
+            noBinFile: true
         });
 
         return fontProperties.lvglSourceFile;

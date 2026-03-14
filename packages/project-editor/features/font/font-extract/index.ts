@@ -83,6 +83,8 @@ export interface ExtractFontParams {
     opts_string?: string;
     lv_fallback?: string;
     additionalSources?: AdditionalFontSourceParams[];
+    noBinFile?: boolean;
+    noSourceFile?: boolean;
 }
 
 export interface IFontExtract {

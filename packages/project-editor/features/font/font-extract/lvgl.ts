@@ -103,7 +103,10 @@ export class ExtractFont implements IFontExtract {
             opts_string: this.params.opts_string,
             lv_fallback: this.params.lv_fallback
                 ? this.params.lv_fallback
-                : undefined
+                : undefined,
+            // stride: 1,
+            // align: 1,
+            // no_kerning: true
         };
 
         // wait for !extractBusy
@@ -121,12 +124,18 @@ export class ExtractFont implements IFontExtract {
         this.fontData = await collectFontData(args);
 
         // get font bin file
-        const bin: Buffer = getFontBinData(args, this.fontData)[output];
-        const lvglBinFile = bin.toString("base64");
+        let lvglBinFile;
+        if (!this.params.noBinFile) {
+            const bin: Buffer = getFontBinData(args, this.fontData)[output];
+            lvglBinFile = bin.toString("base64");
+        }
 
         // get font C file
-        const source: Buffer = getFontSourceData(args, this.fontData)[output];
-        const lvglSourceFile = source.toString("base64");
+        let lvglSourceFile;
+        if (!this.params.noSourceFile) {
+            const source: Buffer = getFontSourceData(args, this.fontData)[output];
+            lvglSourceFile = source.toString("base64");
+        }
 
         extractBusy = false;
 
