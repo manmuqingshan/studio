@@ -54,6 +54,7 @@ import { NavigationStore } from "project-editor/store/navigation";
 import { EditorsStore } from "project-editor/store/editor";
 import { LayoutModels } from "project-editor/store/layout-models";
 import { UIStateStore } from "project-editor/store/ui-state";
+import { FontsCacheStore } from "project-editor/store/fonts-cache";
 import { RuntimeSettings } from "project-editor/store/runtime-settings";
 import { UndoManager } from "project-editor/store/undo-manager";
 import { OutputSections, Section } from "project-editor/store/output-sections";
@@ -162,6 +163,8 @@ export class ProjectStore {
     runtimeModeEditorsStore: EditorsStore;
     uiStateStore: UIStateStore;
 
+    fontsCacheStore: FontsCacheStore;
+
     runtimeSettings = new RuntimeSettings(this);
     outputSectionsStore = new OutputSections(this);
     typesStore = new TypesStore(this);
@@ -241,6 +244,8 @@ export class ProjectStore {
             );
 
             this.uiStateStore = new UIStateStore(this);
+
+            this.fontsCacheStore = new FontsCacheStore(this);
         }
 
         makeObservable<ProjectStore>(this, {
@@ -905,6 +910,10 @@ export class ProjectStore {
             await this.uiStateStore.save();
         }
 
+        if (this.fontsCacheStore) {
+            await this.fontsCacheStore.save();
+        }
+
         if (this.project) {
             return await this.saveModified();
         }
@@ -970,6 +979,10 @@ export class ProjectStore {
 
         if (this.uiStateStore) {
             await this.uiStateStore.load();
+        }
+
+        if (this.fontsCacheStore) {
+            await this.fontsCacheStore.load();
         }
 
         await this.runtimeSettings.load();

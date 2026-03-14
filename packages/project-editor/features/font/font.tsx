@@ -7,7 +7,6 @@ import {
     observable,
     computed,
     makeObservable,
-    action,
     runInAction
 } from "mobx";
 import { dialog, getCurrentWindow } from "@electron/remote";
@@ -1319,10 +1318,15 @@ export class Font extends EezObject {
     lvglFreeTypeStyle: string;
     lvglFreeTypeFilePath: string;
 
-    _lvglBinFile: string | undefined;
-    _lvglBinFileExtractFontParams: ExtractFontParams | undefined;
+    _lvglFontDefinition:
+        | {
+              binFile: string;
+              sourceFile: string;
+          }
+        | undefined;
+    _lvglFontDefinitionExtractFontParams: ExtractFontParams | undefined;
 
-    _lvglCreateGlyphs: boolean;
+    _lvglGlyphsDirty: boolean;
 
     constructor() {
         super();
@@ -1358,11 +1362,11 @@ export class Font extends EezObject {
             lvglFreeTypeRenderMode: observable,
             lvglFreeTypeStyle: observable,
             lvglFreeTypeFilePath: observable,
-            _lvglBinFile: observable,
+            _lvglFontDefinition: observable,
             _lvglExtractFontParams: computed({
                 keepAlive: true
             }),
-            _lvglCreateGlyphs: observable
+            _lvglGlyphsDirty: observable
         });
     }
 
@@ -2202,120 +2206,8 @@ export class Font extends EezObject {
         const lvglVersion = projectStore.project.settings.general.lvglVersion;
         const lvglInclude = projectStore.project.settings.build.lvglInclude;
 
-        return {
-            name: this.name,
-            absoluteFilePath: projectStore.getAbsoluteFilePath(
-                this.source!.filePath
-            ),
-            embeddedFontFile: this.embeddedFontFile,
-            relativeFilePath: this.source!.filePath,
-            renderingEngine: this.renderingEngine,
-            bpp: this.bpp,
-            size: this.source!.size!,
-            threshold: this.threshold,
-            createGlyphs: this._lvglCreateGlyphs,
-            encodings,
-            symbols,
-            createBlankGlyphs: false,
-            doNotAddGlyphIfNotFound: false,
-            getAllGlyphs: true,
-            lvglVersion,
-            lvglInclude,
-            additionalSources: this.getAdditionalSourcesParams(projectStore),
-            noSourceFile: true
-        };
-    }
-
-    reloadLvglGlyphs() {
-        setTimeout(
-            action(() => {
-                this._lvglCreateGlyphs = true;
-            })
-        );
-    }
-
-    async buildLvglBinFile(extractFontParams: ExtractFontParams) {
-        try {
-            const result = await extractFont(extractFontParams);
-
-            if (extractFontParams.createGlyphs) {
-                const projectStore = ProjectEditor.getProjectStore(this);
-
-                runInAction(() => {
-                    this.glyphs.splice(0, this.glyphs.length);
-                    for (const glyphProperties of result.glyphs) {
-                        const glyph = createObject<Glyph>(
-                            projectStore,
-                            glyphProperties as any,
-                            Glyph
-                        );
-                        setParent(glyph, this.glyphs);
-                        this.glyphs.push(glyph);
-                    }
-                });
-            }
-
-            return result.lvglBinFile;
-        } catch (err) {
-            console.error(err);
-            return undefined;
-        }
-    }
-
-    getLvglBinFile() {
-        const currentExtractFontParams = this._lvglExtractFontParams;
-
-        if (
-            !this._lvglBinFileExtractFontParams ||
-            this._lvglBinFileExtractFontParams != currentExtractFontParams
-        ) {
-            this._lvglBinFileExtractFontParams = currentExtractFontParams;
-            setTimeout(async () => {
-                const lvglBinFile = currentExtractFontParams
-                    ? await this.buildLvglBinFile(currentExtractFontParams)
-                    : undefined;
-
-                runInAction(() => {
-                    this._lvglBinFile = lvglBinFile;
-                });
-            });
-        }
-
-        return this._lvglBinFile;
-    }
-
-    async getLvglBinFileAsync() {
-        const currentExtractFontParams = this._lvglExtractFontParams;
-
-        if (
-            !this._lvglBinFileExtractFontParams ||
-            this._lvglBinFileExtractFontParams != currentExtractFontParams
-        ) {
-            this._lvglBinFileExtractFontParams = currentExtractFontParams;
-
-            const lvglBinFile = currentExtractFontParams
-                ? await this.buildLvglBinFile(currentExtractFontParams)
-                : undefined;
-
-            runInAction(() => {
-                this._lvglBinFile = lvglBinFile;
-            });
-        }
-
-        return this._lvglBinFile;
-    }
-
-    async getLvglSourceFile() {
-        if (this.lvglUseFreeType) {
-            return undefined;
-        }
-
-        const projectStore = ProjectEditor.getProjectStore(this);
-
-        const { encodings, symbols } = getLvglEncodingsAndSymbols(
-            this.lvglRanges,
-            this.lvglSymbols
-        );
+        ////////////////////////////////////////
+        // build opts_string
 
         let opts_string = "";
 
@@ -2359,8 +2251,9 @@ export class Font extends EezObject {
             }
         }
 
-        //
-        const fontProperties = await extractFont({
+        ////////////////////////////////////////
+
+        return {
             name: this.name,
             absoluteFilePath: projectStore.getAbsoluteFilePath(
                 this.source!.filePath
@@ -2377,15 +2270,126 @@ export class Font extends EezObject {
             createBlankGlyphs: false,
             doNotAddGlyphIfNotFound: false,
             getAllGlyphs: true,
-            lvglVersion: projectStore.project.settings.general.lvglVersion,
-            lvglInclude: projectStore.project.settings.build.lvglInclude,
-            opts_string,
-            lv_fallback: this.lvglFallbackFont,
+            lvglVersion,
+            lvglInclude,
             additionalSources: this.getAdditionalSourcesParams(projectStore),
-            noBinFile: true
+            opts_string
+        };
+    }
+
+    reloadLvglGlyphs() {
+        if (isLVGLProject(this) && this._lvglGlyphsDirty) {
+            setTimeout(async () => {
+                let extractFontParams = this._lvglExtractFontParams;
+                if (extractFontParams) {
+                    extractFontParams = { ... extractFontParams, createGlyphs: true };
+                    const result = await extractFont(extractFontParams);
+                    if (result.glyphs) {
+                        const projectStore = ProjectEditor.getProjectStore(this);
+                        const glyphs = result.glyphs;
+                        runInAction(() => {
+                            this.glyphs.splice(0, this.glyphs.length);
+                            for (const glyphProperties of glyphs) {
+                                const glyph = createObject<Glyph>(
+                                    projectStore,
+                                    glyphProperties as any,
+                                    Glyph
+                                );
+                                setParent(glyph, this.glyphs);
+                                this.glyphs.push(glyph);
+                            }
+                        });
+                    }
+                }
+            });
+        }        
+    }
+
+    async buildLvglFontDefinition(
+        extractFontParams: ExtractFontParams | undefined
+    ) {
+        runInAction(() => {
+            this._lvglGlyphsDirty = true;
         });
 
-        return fontProperties.lvglSourceFile;
+        this._lvglFontDefinitionExtractFontParams = extractFontParams;
+
+        if (!extractFontParams) {
+            if (this._lvglFontDefinition) {
+                runInAction(() => {
+                    this._lvglFontDefinition = undefined;
+                });
+            }
+            return;
+        }
+
+        try {
+            let result;
+
+            const projectStore = ProjectEditor.getProjectStore(this);
+            result =
+                projectStore.fontsCacheStore.getCachedFontDefinition(
+                    extractFontParams
+                );
+            if (!result) {
+                result = await extractFont(extractFontParams);
+            }
+
+            if (result && result.lvglBinFile && result.lvglSourceFile) {
+                const binFile = result.lvglBinFile;
+                const sourceFile = result.lvglSourceFile;
+
+                runInAction(() => {
+                    this._lvglFontDefinition = {
+                        binFile,
+                        sourceFile
+                    };
+                });               
+            } else {
+                runInAction(() => {
+                    this._lvglFontDefinition = undefined;
+                });                
+            }
+        } catch (err) {
+            console.error(err);
+
+            runInAction(() => {
+                this._lvglFontDefinition = undefined;
+            });
+        }
+    }
+
+    getLvglBinFile() {
+        const currentExtractFontParams = this._lvglExtractFontParams;
+
+        if (
+            !this._lvglFontDefinitionExtractFontParams ||
+            this._lvglFontDefinitionExtractFontParams !=
+                currentExtractFontParams
+        ) {
+            this._lvglFontDefinitionExtractFontParams =
+                currentExtractFontParams;
+
+            setTimeout(async () => {
+                await this.buildLvglFontDefinition(currentExtractFontParams);
+            });
+        }
+
+        return this._lvglFontDefinition?.binFile;
+    }
+
+    async getLvglBinFileAsync() {
+        if (!this._lvglFontDefinition) {
+            await this.buildLvglFontDefinition(this._lvglExtractFontParams);
+        }
+        return this._lvglFontDefinition?.binFile;
+    }
+
+    async getLvglSourceFile() {
+        if (!this._lvglFontDefinition) {
+            await this.buildLvglFontDefinition(this._lvglExtractFontParams);
+        }
+        return this._lvglFontDefinition?.sourceFile;
     }
 }
 

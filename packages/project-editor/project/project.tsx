@@ -808,6 +808,7 @@ export class General extends EezObject {
     dimmedLinesOpacity: number;
 
     embedFonts: boolean;
+    cacheFonts: boolean;
 
     static classInfo: ClassInfo = {
         label: () => "General",
@@ -1057,6 +1058,15 @@ export class General extends EezObject {
                 }
             },
             {
+                name: "cacheFonts",
+                displayName: "Cache font definitions",
+                type: PropertyType.Boolean,
+                checkboxStyleSwitch: true,
+                disabled: (general: General) => {
+                    return general.projectType != ProjectType.LVGL;
+                }
+            },
+            {
                 name: "title",
                 type: PropertyType.String,
                 disabled: isNotDashboardProject
@@ -1261,6 +1271,10 @@ export class General extends EezObject {
             if (jsObject.embedFonts == undefined) {
                 jsObject.embedFonts = true;
             }
+
+            if (jsObject.cacheFonts == undefined) {
+                jsObject.cacheFonts = false;
+            }
         }
     };
 
@@ -1294,7 +1308,8 @@ export class General extends EezObject {
             commandsProtocol: observable,
             hiddenWidgetLines: observable,
             dimmedLinesOpacity: observable,
-            embedFonts: observable
+            embedFonts: observable,
+            cacheFonts: observable
         });
     }
 }
