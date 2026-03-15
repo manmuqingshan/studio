@@ -153,18 +153,23 @@ const CenterLines = observer(
 
             const pageRect = transform.clientToPageRect(transform.clientRect);
 
+            const page = ProjectEditor.getPage(flowContext.flow);
+
             let pageFlowRect;
-            if (flowContext.flow instanceof ProjectEditor.PageClass) {
-                pageFlowRect = flowContext.flow.pageRect;
+            if (page) {
+                pageFlowRect = page.pageRect;
             }
 
             return (
                 <Svg flowContext={flowContext}>
                     {pageFlowRect &&
-                        !flowContext.projectStore.project.settings.general
-                            .circularDisplay &&
-                        flowContext.projectStore.project.settings.general
-                            .displayBorderRadius == 0 && (
+                        !(
+                            !(page && page.isUsedAsUserWidget) &&
+                            (flowContext.projectStore.project.settings.general
+                                .circularDisplay ||
+                                flowContext.projectStore.project.settings
+                                    .general.displayBorderRadius != 0)
+                        ) && (
                             <rect
                                 x={pageFlowRect.left}
                                 y={pageFlowRect.top}

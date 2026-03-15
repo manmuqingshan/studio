@@ -10,6 +10,7 @@ import {
     LVGLPageRuntime
 } from "project-editor/lvgl/page-runtime";
 import { settingsController } from "home/settings";
+import { ProjectEditor } from "project-editor/project-editor-interface";
 
 export const LVGLPage = observer(
     class LVGLPage extends React.Component<{
@@ -95,11 +96,16 @@ const LVGLPageCanvas = observer(
                         : "auto"
             };
 
+            const page = ProjectEditor.getPage(
+                props.flowContext.document.flow.object
+            );
+
             if (
-                props.flowContext.projectStore.project.settings.general
+                !(page && page.isUsedAsUserWidget) &&
+                (props.flowContext.projectStore.project.settings.general
                     .circularDisplay ||
-                props.flowContext.projectStore.project.settings.general
-                    .displayBorderRadius != 0
+                    props.flowContext.projectStore.project.settings.general
+                        .displayBorderRadius != 0)
             ) {
                 style.borderRadius = props.flowContext.projectStore.project
                     .settings.general.circularDisplay
