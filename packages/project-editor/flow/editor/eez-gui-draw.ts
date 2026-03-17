@@ -218,6 +218,60 @@ export function drawGlyph(
                     i += offset;
                     pixelArrayIndex += pixelArrayOffset;
                 }
+            } else if (font.bpp === 4) {
+                const maxAlpha = 15;
+                const bytesPerLine = Math.floor(
+                    (glyph.width * 4 + 7) / 8
+                );
+                for (let y = 0; y < height; y++) {
+                    for (let x = 0; x < width; x++) {
+                        const byteIndex =
+                            y * bytesPerLine + Math.floor(x / 2);
+                        const shift = (1 - (x % 2)) * 4;
+                        const alpha =
+                            ((pixelArray[byteIndex] >> shift) & 0x0f) *
+                            255 /
+                            maxAlpha;
+                        pixelData[i++] =
+                            bgColorRgb.r +
+                            ((fgColorRgb.r - bgColorRgb.r) * alpha) / 255;
+                        pixelData[i++] =
+                            bgColorRgb.g +
+                            ((fgColorRgb.g - bgColorRgb.g) * alpha) / 255;
+                        pixelData[i++] =
+                            bgColorRgb.b +
+                            ((fgColorRgb.b - bgColorRgb.b) * alpha) / 255;
+                        pixelData[i++] = 255;
+                    }
+                    i += offset;
+                }
+            } else if (font.bpp === 2) {
+                const maxAlpha = 3;
+                const bytesPerLine = Math.floor(
+                    (glyph.width * 2 + 7) / 8
+                );
+                for (let y = 0; y < height; y++) {
+                    for (let x = 0; x < width; x++) {
+                        const byteIndex =
+                            y * bytesPerLine + Math.floor(x / 4);
+                        const shift = (3 - (x % 4)) * 2;
+                        const alpha =
+                            ((pixelArray[byteIndex] >> shift) & 0x03) *
+                            255 /
+                            maxAlpha;
+                        pixelData[i++] =
+                            bgColorRgb.r +
+                            ((fgColorRgb.r - bgColorRgb.r) * alpha) / 255;
+                        pixelData[i++] =
+                            bgColorRgb.g +
+                            ((fgColorRgb.g - bgColorRgb.g) * alpha) / 255;
+                        pixelData[i++] =
+                            bgColorRgb.b +
+                            ((fgColorRgb.b - bgColorRgb.b) * alpha) / 255;
+                        pixelData[i++] = 255;
+                    }
+                    i += offset;
+                }
             } else {
                 for (let y = 0; y < height; y++) {
                     for (let x = 0; x < width; x++) {
@@ -301,6 +355,58 @@ export function drawGlyph2(encoding: number, fontExtract: IFontExtract) {
                             pixelData[i++] = pixelArray[pixelArrayIndex++];
                         }
                         pixelArrayIndex += pixelArrayOffset;
+                    }
+                } else if (font.bpp === 4) {
+                    const maxAlpha = 15;
+                    const bytesPerLine = Math.floor(
+                        (glyph.glyphBitmap.width * 4 + 7) / 8
+                    );
+                    for (let y = 0; y < height; y++) {
+                        for (let x = 0; x < width; x++) {
+                            const byteIndex =
+                                y * bytesPerLine + Math.floor(x / 2);
+                            const shift = (1 - (x % 2)) * 4;
+                            const alpha =
+                                ((pixelArray[byteIndex] >> shift) & 0x0f) *
+                                255 /
+                                maxAlpha;
+                            pixelData[i++] =
+                                bgColorRgb.r +
+                                ((fgColorRgb.r - bgColorRgb.r) * alpha) / 255;
+                            pixelData[i++] =
+                                bgColorRgb.g +
+                                ((fgColorRgb.g - bgColorRgb.g) * alpha) / 255;
+                            pixelData[i++] =
+                                bgColorRgb.b +
+                                ((fgColorRgb.b - bgColorRgb.b) * alpha) / 255;
+                            pixelData[i++] = 255;
+                        }
+                    }
+                } else if (font.bpp === 2) {
+                    const maxAlpha = 3;
+                    const bytesPerLine = Math.floor(
+                        (glyph.glyphBitmap.width * 2 + 7) / 8
+                    );
+                    for (let y = 0; y < height; y++) {
+                        for (let x = 0; x < width; x++) {
+                            const byteIndex =
+                                y * bytesPerLine + Math.floor(x / 4);
+                            const shift = (3 - (x % 4)) * 2;
+                            const alpha =
+                                ((pixelArray[byteIndex] >> shift) & 0x03) *
+                                255 /
+                                maxAlpha;
+                            pixelData[i++] =
+                                bgColorRgb.r +
+                                ((fgColorRgb.r - bgColorRgb.r) * alpha) / 255;
+                            pixelData[i++] =
+                                bgColorRgb.g +
+                                ((fgColorRgb.g - bgColorRgb.g) * alpha) / 255;
+                            pixelData[i++] =
+                                bgColorRgb.b +
+                                ((fgColorRgb.b - bgColorRgb.b) * alpha) / 255;
+                            pixelData[i++] = 255;
+                        }
                     }
                 } else {
                     for (let y = 0; y < height; y++) {

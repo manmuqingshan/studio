@@ -743,6 +743,7 @@ export class BuildEezGuiLite {
             build.blockStart(`static const eezgui_font_data_t font_${fontName} = {`);
             build.line(`.ascent = ${font.ascent},`);
             build.line(`.descent = ${font.descent},`);
+            build.line(`.bpp = ${font.bpp},`);
             build.line(`.encodingStart = ${startEncoding},`);
             build.line(`.encodingEnd = ${endEncoding},`);
             build.line(`.groups = font_${fontName}_groups,`);

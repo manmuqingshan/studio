@@ -256,6 +256,53 @@ export class ExtractFont implements IFontExtract {
                                     ];
                             }
                         }
+                    } else if (
+                        this.params.bpp === 2 ||
+                        this.params.bpp === 4
+                    ) {
+                        pixelArray = [];
+                        const bpp = this.params.bpp;
+                        const pixelsPerByte = 8 / bpp;
+                        const maxAlpha = (1 << bpp) - 1;
+                        const bytesPerLine = Math.floor(
+                            (glyphProperties.width * bpp + 7) / 8
+                        );
+
+                        for (
+                            let y = this.glyphPosition.y + glyphInfoY1;
+                            y < this.glyphPosition.y + glyphInfoY2;
+                            y++
+                        ) {
+                            for (
+                                let x = this.glyphPosition.x + glyphInfoX1,
+                                    iByte = 0;
+                                iByte < bytesPerLine &&
+                                x < this.glyphPosition.x + glyphInfoX2;
+                                iByte++
+                            ) {
+                                let byteData = 0;
+
+                                for (
+                                    let iPixel = 0;
+                                    iPixel < pixelsPerByte &&
+                                    x < this.glyphPosition.x + glyphInfoX2;
+                                    iPixel++, x++
+                                ) {
+                                    const alpha =
+                                        this.glyphPixelsArray[
+                                            (y * this.canvasWidth + x) * 4 + 3
+                                        ];
+                                    const quantized = Math.round(
+                                        (alpha * maxAlpha) / 255
+                                    );
+                                    const shift =
+                                        (pixelsPerByte - 1 - iPixel) * bpp;
+                                    byteData |= quantized << shift;
+                                }
+
+                                pixelArray.push(byteData);
+                            }
+                        }
                     } else {
                         pixelArray = [];
 

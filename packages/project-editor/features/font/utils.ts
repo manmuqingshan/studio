@@ -54,12 +54,29 @@ export function getPixel(
 ): number {
     if (glyphBitmap && x < glyphBitmap.width && y < glyphBitmap.height) {
         if (bpp === 8) {
-            return glyphBitmap.pixelArray[y * glyphBitmap.width + x];
-        } else {
-            return (
-                glyphBitmap.pixelArray[getPixelByteIndex(glyphBitmap, x, y)] &
-                (0x80 >> x % 8)
+            const index = y * glyphBitmap.width + x;
+            if (index >= glyphBitmap.pixelArray.length) return 0;
+            return glyphBitmap.pixelArray[index];
+        } else if (bpp === 4) {
+            const bytesPerLine = Math.floor(
+                (glyphBitmap.width * 4 + 7) / 8
             );
+            const byteIndex = y * bytesPerLine + Math.floor(x / 2);
+            if (byteIndex >= glyphBitmap.pixelArray.length) return 0;
+            const shift = (1 - (x % 2)) * 4;
+            return (glyphBitmap.pixelArray[byteIndex] >> shift) & 0x0f;
+        } else if (bpp === 2) {
+            const bytesPerLine = Math.floor(
+                (glyphBitmap.width * 2 + 7) / 8
+            );
+            const byteIndex = y * bytesPerLine + Math.floor(x / 4);
+            if (byteIndex >= glyphBitmap.pixelArray.length) return 0;
+            const shift = (3 - (x % 4)) * 2;
+            return (glyphBitmap.pixelArray[byteIndex] >> shift) & 0x03;
+        } else {
+            const byteIndex = getPixelByteIndex(glyphBitmap, x, y);
+            if (byteIndex >= glyphBitmap.pixelArray.length) return 0;
+            return glyphBitmap.pixelArray[byteIndex] & (0x80 >> x % 8);
         }
     } else {
         return 0;
@@ -75,12 +92,33 @@ function setPixelInplace(
 ) {
     if (bpp === 8) {
         glyphBitmap.pixelArray[y * glyphBitmap.width + x] = color;
+    } else if (bpp === 4) {
+        const bytesPerLine = Math.floor((glyphBitmap.width * 4 + 7) / 8);
+        const byteIndex = y * bytesPerLine + Math.floor(x / 2);
+        if (glyphBitmap.pixelArray[byteIndex] === undefined) {
+            glyphBitmap.pixelArray[byteIndex] = 0;
+        }
+        const shift = (1 - (x % 2)) * 4;
+        const mask = 0x0f << shift;
+        glyphBitmap.pixelArray[byteIndex] =
+            (glyphBitmap.pixelArray[byteIndex] & ~mask) |
+            ((color & 0x0f) << shift);
+    } else if (bpp === 2) {
+        const bytesPerLine = Math.floor((glyphBitmap.width * 2 + 7) / 8);
+        const byteIndex = y * bytesPerLine + Math.floor(x / 4);
+        if (glyphBitmap.pixelArray[byteIndex] === undefined) {
+            glyphBitmap.pixelArray[byteIndex] = 0;
+        }
+        const shift = (3 - (x % 4)) * 2;
+        const mask = 0x03 << shift;
+        glyphBitmap.pixelArray[byteIndex] =
+            (glyphBitmap.pixelArray[byteIndex] & ~mask) |
+            ((color & 0x03) << shift);
     } else {
         let byteIndex = getPixelByteIndex(glyphBitmap, x, y);
         if (glyphBitmap.pixelArray[byteIndex] === undefined) {
             glyphBitmap.pixelArray[byteIndex] = 0;
         }
-        glyphBitmap.pixelArray[byteIndex] |= 0x80 >> x % 8;
         if (color) {
             glyphBitmap.pixelArray[byteIndex] |= 0x80 >> x % 8;
         } else {
@@ -139,6 +177,48 @@ export function getPixelByteIndex(
     y: number
 ): number {
     return y * Math.floor((glyphBitmap.width + 7) / 8) + Math.floor(x / 8);
+}
+
+// Convert a pixel value from one bpp to a normalized 0-255 alpha value
+function pixelToAlpha(value: number, bpp: number): number {
+    if (bpp === 8) return value;
+    if (bpp === 1) return value ? 255 : 0;
+    const maxVal = (1 << bpp) - 1;
+    return Math.round((value * 255) / maxVal);
+}
+
+// Convert a 0-255 alpha value to a pixel value for the target bpp
+function alphaToPixel(alpha: number, bpp: number): number {
+    if (bpp === 8) return alpha;
+    if (bpp === 1) return alpha > 127 ? 1 : 0;
+    const maxVal = (1 << bpp) - 1;
+    return Math.round((alpha * maxVal) / 255);
+}
+
+export function convertGlyphBitmap(
+    glyphBitmap: IGlyphBitmap,
+    oldBpp: number,
+    newBpp: number
+): IGlyphBitmap {
+    const width = glyphBitmap.width;
+    const height = glyphBitmap.height;
+
+    const result: IGlyphBitmap = {
+        width,
+        height,
+        pixelArray: []
+    };
+
+    for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+            const oldValue = getPixel(glyphBitmap, x, y, oldBpp);
+            const alpha = pixelToAlpha(oldValue, oldBpp);
+            const newValue = alphaToPixel(alpha, newBpp);
+            setPixelInplace(result, x, y, newValue, newBpp);
+        }
+    }
+
+    return result;
 }
 
 export function from1to8bpp(glyphBitmap: GlyphBitmap) {

@@ -479,6 +479,10 @@ export class Glyph extends EezObject {
 
                     if (font.bpp === 8 || project.projectTypeTraits.isLVGL) {
                         ctx.globalAlpha = pixelValue / 255;
+                    } else if (font.bpp === 4) {
+                        ctx.globalAlpha = pixelValue / 15;
+                    } else if (font.bpp === 2) {
+                        ctx.globalAlpha = pixelValue / 3;
                     }
 
                     if (pixelValue) {
@@ -835,12 +839,23 @@ export class Glyph extends EezObject {
                 0
             );
 
+            const font = this.font;
+            const maxAlpha = (1 << font.bpp) - 1;
             for (let x = 0; x < this.glyphBitmap.width; x++) {
                 for (let y = 0; y < this.glyphBitmap.height; y++) {
                     const i = (y * this.glyphBitmap.width + x) * 4;
-                    buffer[i + 0] = 255 - this.getPixel(x, y);
-                    buffer[i + 1] = 255 - this.getPixel(x, y);
-                    buffer[i + 2] = 255 - this.getPixel(x, y);
+                    const pixel = this.getPixel(x, y);
+                    const value =
+                        font.bpp === 8
+                            ? pixel
+                            : font.bpp === 1
+                              ? pixel
+                                  ? 255
+                                  : 0
+                              : Math.round((pixel * 255) / maxAlpha);
+                    buffer[i + 0] = 255 - value;
+                    buffer[i + 1] = 255 - value;
+                    buffer[i + 2] = 255 - value;
                     buffer[i + 3] = 255;
                 }
             }
@@ -1264,9 +1279,148 @@ const ChangeBitsPerPixel = observer(
                 }
             });
 
+            const newBpp = result.values.bpp;
+
+            if (font.bpp === newBpp) {
+                return;
+            }
+
+            // Group glyphs by their source file path and size.
+            // Glyphs with their own GlyphSource use that; others
+            // fall back to the font-level FontSource.
+            const sourceGroups = new Map<
+                string,
+                {
+                    relativeFilePath: string;
+                    size: number;
+                    encodings: number[];
+                }
+            >();
+
+            for (const glyph of font.glyphs) {
+                const relPath =
+                    glyph.source?.filePath || font.source?.filePath;
+                const size =
+                    glyph.source?.size ||
+                    font.source?.size ||
+                    font.height;
+
+                if (!relPath) {
+                    continue;
+                }
+
+                const key = `${relPath}\0${size}`;
+                let group = sourceGroups.get(key);
+                if (!group) {
+                    group = {
+                        relativeFilePath: relPath,
+                        size,
+                        encodings: []
+                    };
+                    sourceGroups.set(key, group);
+                }
+                group.encodings.push(glyph.encoding);
+            }
+
+            if (sourceGroups.size === 0) {
+                projectStore.updateObject(font, {
+                    bpp: newBpp
+                });
+                return;
+            }
+
+            // Extract glyphs from each source file
+            const allNewGlyphs = new Map<
+                number,
+                {
+                    x: number;
+                    y: number;
+                    width: number;
+                    height: number;
+                    dx: number;
+                    glyphBitmap?: any;
+                }
+            >();
+
+            let firstFontProperties: any;
+
+            try {
+                for (const group of sourceGroups.values()) {
+                    // Build encoding ranges from sorted encodings
+                    const sorted = group.encodings.slice().sort(
+                        (a, b) => a - b
+                    );
+                    const encodings: EncodingRange[] = [];
+                    let i = 0;
+                    while (i < sorted.length) {
+                        const from = sorted[i];
+                        while (
+                            i + 1 < sorted.length &&
+                            sorted[i + 1] === sorted[i] + 1
+                        ) {
+                            i++;
+                        }
+                        encodings.push({ from, to: sorted[i] });
+                        i++;
+                    }
+
+                    const fontProperties = await extractFont({
+                        name: font.name,
+                        absoluteFilePath:
+                            projectStore.getAbsoluteFilePath(
+                                group.relativeFilePath
+                            ),
+                        embeddedFontFile: font.embeddedFontFile,
+                        relativeFilePath: group.relativeFilePath,
+                        renderingEngine: font.renderingEngine,
+                        bpp: newBpp,
+                        size: group.size,
+                        threshold: font.threshold,
+                        createGlyphs: true,
+                        encodings,
+                        createBlankGlyphs: false,
+                        doNotAddGlyphIfNotFound: true
+                    });
+
+                    if (!firstFontProperties) {
+                        firstFontProperties = fontProperties;
+                    }
+
+                    for (const g of fontProperties.glyphs) {
+                        allNewGlyphs.set(g.encoding, g);
+                    }
+                }
+            } catch (error) {
+                notification.error(
+                    `Failed to change bits per pixel: ${error}`
+                );
+                return;
+            }
+
+            projectStore.undoManager.setCombineCommands(true);
+
             projectStore.updateObject(font, {
-                bpp: result.values.bpp
+                bpp: firstFontProperties.bpp,
+                ascent: firstFontProperties.ascent,
+                descent: firstFontProperties.descent,
+                height: firstFontProperties.height
             });
+
+            for (const glyph of font.glyphs) {
+                const newGlyphProps = allNewGlyphs.get(glyph.encoding);
+                if (newGlyphProps) {
+                    projectStore.updateObject(glyph, {
+                        x: newGlyphProps.x,
+                        y: newGlyphProps.y,
+                        width: newGlyphProps.width,
+                        height: newGlyphProps.height,
+                        dx: newGlyphProps.dx,
+                        glyphBitmap: newGlyphProps.glyphBitmap
+                    });
+                }
+            }
+
+            projectStore.undoManager.setCombineCommands(false);
         };
 
         render() {
@@ -1426,7 +1580,9 @@ export class Font extends EezObject {
                 readOnlyInPropertyGrid: true,
                 enumDisallowUndefined: true,
                 disabled: (font: Font) =>
-                    (isNotV1Project(font) && !isLVGLProject(font)) ||
+                    (isNotV1Project(font) &&
+                        !isLVGLProject(font) &&
+                        !isEezGuiLiteProject(font)) ||
                     (isLVGLProject(font) && font.lvglUseFreeType)
             },
             {
@@ -1436,14 +1592,15 @@ export class Font extends EezObject {
                 propertyGridFullRowComponent: ChangeBitsPerPixel,
                 skipSearch: true,
                 disabled: (font: Font) =>
-                    !isLVGLProject(font) ||
+                    (!isLVGLProject(font) && !isEezGuiLiteProject(font)) ||
                     (isLVGLProject(font) && font.lvglUseFreeType)
             },
             {
                 name: "threshold",
                 type: PropertyType.Number,
                 defaultValue: 128,
-                disabled: (font: Font) => isLVGLProject(font) || font.bpp == 8
+                disabled: (font: Font) =>
+                    isLVGLProject(font) || font.bpp != 1
             },
             {
                 name: "height",
@@ -1977,8 +2134,10 @@ export class Font extends EezObject {
                                         name: "bpp",
                                         displayName: "Bits per pixel",
                                         type: "enum",
-                                        enumItems: [1, 8],
-                                        visible: () => isV1Project(parent)
+                                        enumItems: [1, 2, 4, 8],
+                                        visible: () =>
+                                            isV1Project(parent) ||
+                                            isEezGuiLiteProject(parent)
                                     },
                                     {
                                         name: "size",

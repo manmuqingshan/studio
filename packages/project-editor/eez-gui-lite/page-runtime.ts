@@ -466,6 +466,7 @@ export class EezGuiLiteRuntime {
         // font_data_t field offsets
         const offFontAscent = this.wasm._offsetofFontAscent();
         const offFontDescent = this.wasm._offsetofFontDescent();
+        const offFontBpp = this.wasm._offsetofFontBpp();
         const offFontEncodingStart = this.wasm._offsetofFontEncodingStart();
         const offFontEncodingEnd = this.wasm._offsetofFontEncodingEnd();
         const offFontGroups = this.wasm._offsetofFontGroups();
@@ -548,6 +549,7 @@ export class EezGuiLiteRuntime {
             const fontDataPtr = this.wasmMalloc(fontDataSize);
             this.wasm.HEAPU8[fontDataPtr + offFontAscent] = font.ascent;
             this.wasm.HEAPU8[fontDataPtr + offFontDescent] = font.descent;
+            this.wasm.HEAPU8[fontDataPtr + offFontBpp] = font.bpp;
             this.wasm.HEAPU32[(fontDataPtr + offFontEncodingStart) >> 2] =
                 startEncoding;
             this.wasm.HEAPU32[(fontDataPtr + offFontEncodingEnd) >> 2] =

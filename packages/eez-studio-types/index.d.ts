@@ -830,6 +830,7 @@ export interface IWasmFlowRuntime {
     // EEZ-GUI Lite — font_data_t offsets
     _offsetofFontAscent(): number;
     _offsetofFontDescent(): number;
+    _offsetofFontBpp(): number;
     _offsetofFontEncodingStart(): number;
     _offsetofFontEncodingEnd(): number;
     _offsetofFontGroups(): number;

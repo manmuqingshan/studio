@@ -208,6 +208,14 @@ export function buildExpression(
                 return `String_format(&eezgui_ctx, ${JSON.stringify(formatStr)}, ${args.join(", ")})`;
             }
 
+            if (
+                (node.operator == "==" || node.operator == "!=") &&
+                node.left.valueType == "string" &&
+                node.right.valueType == "string"
+            ) {
+                return `(strcmp(${buildExpressionNode(node.left)}, ${buildExpressionNode(node.right)}) ${node.operator == "==" ? "=" : "!"}= 0)`
+            }
+
             return `(${buildExpressionNode(node.left)} ${node.operator} ${buildExpressionNode(node.right)})`;
         }
 
