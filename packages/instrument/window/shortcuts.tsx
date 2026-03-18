@@ -55,7 +55,7 @@ class ShortcutsToolbarRegistry {
             activeShortcutsToolbar: observable
         });
 
-        this.findActiveShortcutsToolbar();
+        //this.findActiveShortcutsToolbar();
     }
 
     findActiveShortcutsToolbar = () => {

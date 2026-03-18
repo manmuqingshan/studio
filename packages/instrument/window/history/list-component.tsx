@@ -1,6 +1,5 @@
 import { Menu, MenuItem } from "@electron/remote";
 import React from "react";
-import { findDOMNode } from "react-dom";
 import { IObservableValue, action, makeObservable, runInAction } from "mobx";
 import { observer } from "mobx-react";
 import classNames from "classnames";
@@ -330,7 +329,6 @@ export class HistoryListComponentClass extends React.Component<{
     jumpToPresentCondition: IObservableValue<boolean>;
 }> {
     animationFrameRequestId: any;
-    div: Element;
 
     fromBottom: number | undefined;
     fromTop: number | undefined = 0;
@@ -343,6 +341,12 @@ export class HistoryListComponentClass extends React.Component<{
 
     findCenterItemTimeut: any;
     lastItemInTheCenterId: string | undefined;
+
+    ref = React.createRef<HTMLDivElement>();
+
+    get div() {
+        return this.ref.current!.parentElement as Element;
+    }
 
     constructor(props: any) {
         super(props);
@@ -581,12 +585,7 @@ export class HistoryListComponentClass extends React.Component<{
         return (
             <div
                 className="EezStudio_HistoryListComponentContainer"
-                ref={(ref: any) => {
-                    let div = findDOMNode(ref);
-                    if (div && div.parentElement) {
-                        this.div = div.parentElement;
-                    }
-                }}
+                ref={this.ref}
                 onClick={event => {
                     if (
                         $(event.target).closest(
