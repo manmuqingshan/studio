@@ -157,7 +157,7 @@ export class ColorFormat {
         input = input.trim();
 
         // 1) #RRGGBB or #RGB
-        if (/^#[0-9a-fA-F]{3,6}$/.test(input)) {
+        if (/^#?[0-9a-fA-F]{3,6}$/.test(input)) {
             cf.formatType = ColorFormatType.HEX_HASH;
             const hexPart = input.slice(1);
             cf.hexUpperCase = hexPart === hexPart.toUpperCase();

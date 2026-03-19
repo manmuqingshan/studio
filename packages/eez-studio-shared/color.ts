@@ -292,7 +292,7 @@ export function parseColorString(
     color = color.trim();
 
     // #RRGGBB or #RGB
-    if (/^#[0-9a-fA-F]{6}$/.test(color)) {
+    if (/^#?[0-9a-fA-F]{6}$/.test(color)) {
         const v = parseInt(color.slice(1), 16);
         return {
             r: (v >> 16) & 0xff,
@@ -301,7 +301,7 @@ export function parseColorString(
             a: 1
         };
     }
-    if (/^#[0-9a-fA-F]{3}$/.test(color)) {
+    if (/^#?[0-9a-fA-F]{3}$/.test(color)) {
         const hex = color.slice(1);
         const expanded =
             hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
@@ -315,7 +315,7 @@ export function parseColorString(
     }
 
     // #RRGGBBAA or #RGBA
-    if (/^#[0-9a-fA-F]{8}$/.test(color)) {
+    if (/^#?[0-9a-fA-F]{8}$/.test(color)) {
         const v = parseInt(color.slice(1), 16);
         return {
             r: (v >> 24) & 0xff,
@@ -324,7 +324,7 @@ export function parseColorString(
             a: ((v & 0xff) / 255)
         };
     }
-    if (/^#[0-9a-fA-F]{4}$/.test(color)) {
+    if (/^#?[0-9a-fA-F]{4}$/.test(color)) {
         const hex = color.slice(1);
         const expanded =
             hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2] + hex[3] + hex[3];
