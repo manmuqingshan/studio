@@ -1872,7 +1872,7 @@ export async function buildAssets(
     result.EEZ_FLOW_IS_USING_CRYPTO_SHA256 = assets.isUsingCrypyoSha256;
 
     // build eez-gui-lite source code
-    if (sectionNames!.indexOf("EEZ_GUI_LITE_DECL") !== -1 || sectionNames!.indexOf("EEZ_GUI_LITE_DEF") !== -1) {
+    if (sectionNames && (sectionNames.indexOf("EEZ_GUI_LITE_DECL") !== -1 || sectionNames.indexOf("EEZ_GUI_LITE_DEF") !== -1)) {
         const buildEezGuiLite = new BuildEezGuiLite(assets); 
         if (sectionNames!.indexOf("EEZ_GUI_LITE_DECL") !== -1) {
             result.EEZ_GUI_LITE_DECL = buildEezGuiLite.buildDecl();
