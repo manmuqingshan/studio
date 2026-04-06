@@ -293,7 +293,7 @@ export function parseColorString(
 
     // #RRGGBB or #RGB
     if (/^#?[0-9a-fA-F]{6}$/.test(color)) {
-        const v = parseInt(color.slice(1), 16);
+        const v = parseInt(color.startsWith("#") ? color.slice(1) : color, 16);
         return {
             r: (v >> 16) & 0xff,
             g: (v >> 8) & 0xff,
@@ -302,7 +302,7 @@ export function parseColorString(
         };
     }
     if (/^#?[0-9a-fA-F]{3}$/.test(color)) {
-        const hex = color.slice(1);
+        const hex = color.startsWith("#") ? color.slice(1) : color;
         const expanded =
             hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
         const v = parseInt(expanded, 16);
@@ -316,7 +316,7 @@ export function parseColorString(
 
     // #RRGGBBAA or #RGBA
     if (/^#?[0-9a-fA-F]{8}$/.test(color)) {
-        const v = parseInt(color.slice(1), 16);
+        const v = parseInt(color.startsWith("#") ? color.slice(1) : color, 16);
         return {
             r: (v >> 24) & 0xff,
             g: (v >> 16) & 0xff,
@@ -325,7 +325,7 @@ export function parseColorString(
         };
     }
     if (/^#?[0-9a-fA-F]{4}$/.test(color)) {
-        const hex = color.slice(1);
+        const hex = color.startsWith("#") ? color.slice(1) : color;
         const expanded =
             hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2] + hex[3] + hex[3];
         const v = parseInt(expanded, 16);
