@@ -175,6 +175,12 @@ export class WasmRuntime extends RemoteRuntime {
     ////////////////////////////////////////////////////////////////////////////////
 
     async doStartRuntime(isDebuggerActive: boolean) {
+        if (this.projectStore.projectTypeTraits.isLVGL) {
+            for (const font of this.projectStore.project.fonts) {
+                await font.getLvglBinFileAsync();
+            }
+        }
+
         let result;
 
         if (this.projectStore.context.type == "standalone") {

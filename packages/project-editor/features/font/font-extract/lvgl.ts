@@ -121,10 +121,21 @@ export class ExtractFont implements IFontExtract {
         extractBusy = true;
 
         const fontName = this.params.name || "font";
-        const toastId = notification.info(
-            `Extracting font "${fontName}"...`,
-            { autoClose: false, isLoading: true }
-        );
+
+        // show notification only if this takes longer than 1 second
+        const NOTIFICATION_TIMEOUT = 3000;
+        let toastId;
+        function createToast() {
+            toastId = notification.info(
+                `Extracting font "${fontName}"...`,
+                { autoClose: false, isLoading: true }
+            );
+        }
+        let timeout: any = setTimeout(() => {
+            timeout = undefined;
+            createToast();
+        }, NOTIFICATION_TIMEOUT);
+        //
 
         try {
             const workerResult = await new Promise<any>((resolve, reject) => {
@@ -178,13 +189,30 @@ export class ExtractFont implements IFontExtract {
                 lvglSourceFile
             };
 
-            notification.update(toastId!, {
-                render: `Font "${fontName}" extracted successfully.`,
-                type: notification.SUCCESS,
-                isLoading: false,
-                autoClose: 1000
-            });
+            if (timeout) {
+                clearTimeout(timeout);
+                timeout = undefined;                
+            }
+
+            if (toastId) {
+                notification.update(toastId!, {
+                    render: `Font "${fontName}" extracted successfully.`,
+                    type: notification.SUCCESS,
+                    isLoading: false,
+                    autoClose: 1000
+                });
+            }
         } catch (err: any) {
+            if (timeout) {
+                clearTimeout(timeout);
+                timeout = undefined;
+            }
+
+            if (!toastId) {
+                // always show notification if it fails
+                createToast();
+            }
+
             notification.update(toastId!, {
                 render: `Font "${fontName}" extraction failed: ${err.message}`,
                 type: notification.ERROR,
