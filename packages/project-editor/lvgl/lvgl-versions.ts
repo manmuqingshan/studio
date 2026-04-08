@@ -308,19 +308,21 @@ const version_9 = {
 
         const embeddedImage = await bitmap.getEmbeddedImage();
 
-        const img = await new LVGLImage().from_png(embeddedImage, TO_IMAGE_MODE[bitmap.bpp.toString()], 0x000000, false, false, true);
-        const align = 10;
-        img.adjust_stride(0, align);
+        try {
+            const img = await new LVGLImage().from_png(embeddedImage, TO_IMAGE_MODE[bitmap.bpp.toString()], 0x000000, false, false, false, true);
 
-        let result;
-        if (binFile) {
-            result = img.to_bin_as_buffer('NONE');
-        } else {
-            const baseName = path.basename(fileName, path.extname(fileName));
-            result = img.to_c_array_as_string(baseName + '.c');
+            let result;
+            if (binFile) {
+                result = img.to_bin_as_buffer('NONE');
+            } else {
+                const baseName = path.basename(fileName, path.extname(fileName));
+                result = img.to_c_array_as_string(baseName + '.c');
+            }
+            return result;
+        } catch (err) {
+            console.error(err);
+            throw err;
         }
-
-        return result;
     },
 
     getLvglStylePropName: (stylePropName: string) => {

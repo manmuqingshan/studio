@@ -3106,7 +3106,7 @@ ${source}`;
                             this.project._store.outputSectionsStore.write(
                                 Section.OUTPUT,
                                 MessageType.ERROR,
-                                `Error genereting bitmap file '${output}.c': ${err}`
+                                `Error generating bitmap file '${output}.c': ${err}`
                             );
                         }
                     }

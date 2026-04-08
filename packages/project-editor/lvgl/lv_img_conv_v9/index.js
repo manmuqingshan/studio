@@ -14,6 +14,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 const { PNG } = require('pngjs');
 const child_process = require('child_process');
 let lz4 = null;
@@ -702,32 +703,61 @@ class LVGLImage {
         }
 
         if (!pngquantPath && execPath) {
+          // For shell execution, data URIs and buffers are not supported
+          // (they will be handled by the pngquant-bin npm package code below)
           if (Buffer.isBuffer(filename) || (typeof filename === 'string' && filename.startsWith('data:image/png;base64,'))) {
-            throw new Error('pngquant binary conversion requires a file path; provide a filename or use JS quantize (forceJS=true)');
-          }
-          // fallback to PATH or execPath binary
-          const cmd = `${dither ? '' : '--nofs'} ${ncolors} --force - < "${filename}"`;
-          try {
-            return child_process.execSync(cmd, { shell: true });
-          } catch (e) {
-            throw new Error('pngquant not found; install pngquant or the npm package "pngquant-bin"');
+            // This path is reached only if pngquantPath is also not available
+            // Fall through to the spawnSync path which handles temporary files
+          } else {
+            // fallback to PATH or execPath binary for regular filenames
+            const cmd = `${dither ? '' : '--nofs'} ${ncolors} --force - < "${filename}"`;
+            try {
+              return child_process.execSync(cmd, { shell: true });
+            } catch (e) {
+              throw new Error('pngquant not found; install pngquant or the npm package "pngquant-bin"');
+            }
           }
         }
 
         // resolve binary path if pngquant-bin returned an object
         let bin = pngquantPath || path.join(execPath, 'pngquant');
         if (bin && typeof bin === 'object' && bin.default) bin = bin.default;
-        const args = [];
-        if (!dither) args.push('--nofs');
-        args.push(String(ncolors));
-        args.push('--force', '--output', '-', '--', filename);
 
-        const res = child_process.spawnSync(bin, args);
-        if (res.status !== 0) {
-          const err = res.stderr ? res.stderr.toString() : 'unknown error';
-          throw new Error(`pngquant conversion failed: ${err}`);
+        // Handle data URIs and buffers by writing to a temporary file
+        let inputFile = filename;
+        let tempFile = null;
+
+        if (typeof filename === 'string' && filename.startsWith('data:image/png;base64,')) {
+          // Write data URI to temporary file
+          const buf = Buffer.from(filename.split(',')[1], 'base64');
+          tempFile = path.join(os.tmpdir(), `.lvgl_tmp_${Date.now()}_${Math.random().toString(36).slice(2)}.png`);
+          fs.writeFileSync(tempFile, buf);
+          inputFile = tempFile;
+        } else if (Buffer.isBuffer(filename)) {
+          // Write buffer to temporary file
+          tempFile = path.join(os.tmpdir(), `.lvgl_tmp_${Date.now()}_${Math.random().toString(36).slice(2)}.png`);
+          fs.writeFileSync(tempFile, filename);
+          inputFile = tempFile;
         }
-        return res.stdout;
+
+        try {
+          const args = [];
+          if (!dither) args.push('--nofs');
+          args.push(String(ncolors));
+          args.push('--force', '--output', '-', '--', inputFile);
+
+          const res = child_process.spawnSync(bin, args);
+          if (res.status !== 0) {
+            const err = res.stderr ? res.stderr.toString() : 'unknown error';
+            throw new Error(`pngquant conversion failed: ${err}`);
+          }
+          return res.stdout;
+        } finally {
+          // Clean up temporary file
+          if (tempFile && fs.existsSync(tempFile)) {
+            fs.unlinkSync(tempFile);
+          }
+        }
       }
     };
   }
@@ -886,7 +916,7 @@ class LVGLImage {
 
   _png_to_alpha_only(cf, filename) {
     const png = this._readPNG(filename);
-    if (!png.alpha) throw new Error(`${filename} has no alpha channel`);
+    if (!png.alpha) throw new Error(`Image has no alpha channel`);
 
     if (cf === ColorFormat.A8) {
       const raw = Buffer.alloc(png.width * png.height);
@@ -909,7 +939,7 @@ class LVGLImage {
 
   _png_to_al88(cf, filename) {
     const png = this._readPNG(filename);
-    if (!png.alpha) throw new Error(`${filename} has no alpha channel`);
+    if (!png.alpha) throw new Error(`Image has no alpha channel`);
     const raw = Buffer.alloc(png.width * png.height * 2);
     let pos = 0;
     for (let y=0;y<png.height;y++) {
