@@ -3064,7 +3064,7 @@ extern ext_font_desc_t fonts[];
                             this.project._store.outputSectionsStore.write(
                                 Section.OUTPUT,
                                 MessageType.ERROR,
-                                `Error genereting bitmap file '${output}.bin': ${err}`
+                                `Error generating bitmap file '${output}.bin': ${err}`
                             );
                         }
                     } else {

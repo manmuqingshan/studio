@@ -807,6 +807,8 @@ export class General extends EezObject {
     hiddenWidgetLines: "visible" | "dimmed" | "hidden";
     dimmedLinesOpacity: number;
 
+    embedBitmaps: boolean;
+
     embedFonts: boolean;
     cacheFonts: boolean;
 
@@ -1049,6 +1051,12 @@ export class General extends EezObject {
                 }
             },
             {
+                name: "embedBitmaps",
+                displayName: "Embed bitmaps inside eez-project file",
+                type: PropertyType.Boolean,
+                checkboxStyleSwitch: true
+            },
+            {
                 name: "embedFonts",
                 displayName: "Embed fonts inside eez-project file",
                 type: PropertyType.Boolean,
@@ -1268,6 +1276,10 @@ export class General extends EezObject {
                 jsObject.dimmedLinesOpacity = "20";
             }
 
+            if (jsObject.embedBitmaps == undefined) {
+                jsObject.embedBitmaps = true;
+            }
+
             if (jsObject.embedFonts == undefined) {
                 jsObject.embedFonts = true;
             }
@@ -1308,6 +1320,7 @@ export class General extends EezObject {
             commandsProtocol: observable,
             hiddenWidgetLines: observable,
             dimmedLinesOpacity: observable,
+            embedBitmaps: observable,
             embedFonts: observable,
             cacheFonts: observable
         });

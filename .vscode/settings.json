@@ -111,5 +111,6 @@
     "editor.formatOnSave": false,
     "C_Cpp.formatting": "disabled",
     "cortex-debug.variableUseNaturalFormat": false,
-    "C_Cpp.intelliSenseEngine":"Tag Parser"
+    "C_Cpp.intelliSenseEngine": "Tag Parser",
+    "js/ts.tsdk.path": "node_modules\\typescript\\lib"
 }

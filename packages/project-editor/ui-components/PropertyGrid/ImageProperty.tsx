@@ -125,9 +125,16 @@ export const ImageProperty = observer(
                                     const filePaths = result.filePaths;
                                     if (filePaths && filePaths[0]) {
                                         this.context.uiStateStore.openDialogDefaultPath = result.filePaths[0];
-                                        if (
-                                            propertyInfo.embeddedImage == true
-                                        ) {
+
+                                        const embeddedImage =
+                                            propertyInfo.embeddedImage != undefined
+                                                ? typeof propertyInfo.embeddedImage == "boolean"
+                                                    ? propertyInfo.embeddedImage
+                                                    : propertyInfo.embeddedImage(
+                                                          this.props.objects[0]
+                                                      )
+                                                : false;
+                                        if (embeddedImage) {
                                             fs.readFile(
                                                 this.context.getAbsoluteFilePath(
                                                     filePaths[0]

@@ -156,17 +156,19 @@ const version_8 = {
             });
         }
 
-        const image = await loadImage(bitmap.image);
+        const image = await loadImage(bitmap.imageSrc);
         if (!image) {
             return "";
         }
+
+        const embeddedImage = await bitmap.getEmbeddedImage();
 
         const cf = TO_IMAGE_MODE[bitmap.bpp.toString()];
 
         if (cf == ImageMode.CF_RAW_CHROMA || cf == ImageMode.CF_RAW_ALPHA) {
             // for example: data:image/png;base64,
             const data: Uint8Array = Buffer.from(
-                bitmap.image.substring(bitmap.image.indexOf(",") + 1),
+                embeddedImage.substring(embeddedImage.indexOf(",") + 1),
                 "base64"
             );
             return (await convertImage(data, {
@@ -304,7 +306,9 @@ const version_9 = {
 
         const { LVGLImage } = require("./lv_img_conv_v9/index.js");
 
-        const img = await new LVGLImage().from_png(bitmap.image, TO_IMAGE_MODE[bitmap.bpp.toString()], 0x000000, false, false, true);
+        const embeddedImage = await bitmap.getEmbeddedImage();
+
+        const img = await new LVGLImage().from_png(embeddedImage, TO_IMAGE_MODE[bitmap.bpp.toString()], 0x000000, false, false, true);
         const align = 10;
         img.adjust_stride(0, align);
 

@@ -27,9 +27,11 @@ import {
     IMessage
 } from "project-editor/core/object";
 import { validators } from "eez-studio-shared/validation";
+import { fileExistsSync } from "eez-studio-shared/util-electron";
 
 import {
     createObject,
+    getChildOfObject,
     getProjectStore,
     getUniquePropertyValue,
     Message,
@@ -172,7 +174,10 @@ export class Bitmap extends EezObject {
                 type: PropertyType.Image,
                 skipSearch: true,
                 disableBitmapPreview: true,
-                embeddedImage: true
+                embeddedImage: (bitmap: Bitmap) => {
+                    const project = ProjectEditor.getProject(bitmap);
+                    return project.settings.general.embedBitmaps;
+                }
             },
             {
                 name: "bpp",
@@ -266,7 +271,20 @@ export class Bitmap extends EezObject {
         check: (bitmap: Bitmap, messages: IMessage[]) => {
             const projectStore = getProjectStore(bitmap);
 
-            if (!bitmap.image) {
+            if (bitmap.image) {
+                if (!bitmap.image.startsWith("data:image/")) {
+                    const absoluteFilePath = ProjectEditor.getProjectStore(bitmap).getAbsoluteFilePath(bitmap.image);
+                    if (!fileExistsSync(absoluteFilePath)) {
+                        messages.push(
+                            new Message(
+                                MessageType.ERROR,
+                                `Bitmap image file '${absoluteFilePath}' not found`,
+                                getChildOfObject(bitmap, "image")
+                            )
+                        );
+                    }
+                }
+            } else {
                 messages.push(propertyNotSetMessage(bitmap, "image"));
             }
 
@@ -387,9 +405,6 @@ export class Bitmap extends EezObject {
             }
         },
         icon: "material:image",
-        afterLoadHook: (bitmap: Bitmap, project) => {
-            bitmap.migrateLvglBitmap(project._store);
-        },
         updateObjectValueHook: (bitmap: Bitmap, values: any) => {
             if (values.image != undefined && bitmap.image != values.image) {
                 const project = ProjectEditor.getProject(bitmap);
@@ -616,14 +631,12 @@ export class Bitmap extends EezObject {
         return this.getBitmapData(this.bpp);
     }
 
-    async migrateLvglBitmap(projectStore: ProjectStore) {
+    async getEmbeddedImage() {
         if (this.image.startsWith("data:image/")) {
-            return;
+            return this.image;
         }
 
-        // migrate from assets folder to the embedded asset
-
-        const absoluteFilePath = projectStore.getAbsoluteFilePath(this.image);
+        const absoluteFilePath = ProjectEditor.getProjectStore(this).getAbsoluteFilePath(this.image);
 
         const imageData = await fs.promises.readFile(
             absoluteFilePath,
@@ -638,10 +651,7 @@ export class Bitmap extends EezObject {
             fileType = "image/png";
         }
 
-        runInAction(() => {
-            this.image = `data:${fileType};base64,` + imageData;
-            projectStore.setModified(Symbol());
-        });
+        return `data:${fileType};base64,` + imageData;
     }
 }
 
@@ -654,15 +664,6 @@ export async function createBitmap(
     name?: string,
     bpp?: number
 ) {
-    if (fileType == undefined) {
-        const ext = path.extname(filePath).toLowerCase();
-        if (ext == ".jpg" || ext == ".jpeg") {
-            fileType = "image/jpg";
-        } else {
-            fileType = "image/png";
-        }
-    }
-
     if (bpp == undefined) {
         bpp = projectStore.projectTypeTraits.isLVGL ? CF_TRUE_COLOR_ALPHA : 32;
     }
@@ -676,11 +677,26 @@ export async function createBitmap(
     }
 
     try {
-        const result = fs.readFileSync(filePath, "base64");
+        let image;
+
+        if (projectStore.project.settings.general.embedBitmaps) {
+            const result = fs.readFileSync(filePath, "base64");
+            if (fileType == undefined) {
+                const ext = path.extname(filePath).toLowerCase();
+                if (ext == ".jpg" || ext == ".jpeg") {
+                    fileType = "image/jpg";
+                } else {
+                    fileType = "image/png";
+                }
+            }
+            image = `data:${fileType};base64,` + result;
+        } else {
+            image = projectStore.getFilePathRelativeToProjectPath(filePath);
+        }
 
         const bitmapProperties: Partial<Bitmap> = {
             name,
-            image: `data:${fileType};base64,` + result,
+            image,
             bpp,
             alwaysBuild: false
         };
@@ -700,19 +716,9 @@ export async function createBitmap(
 
 export async function createBitmapFromFile(
     projectStore: ProjectStore,
-    file: File
+    file: File,
+    filePath: string
 ) {
-    let fileType = file.type;
-
-    if (file.type == undefined) {
-        const ext = path.extname(file.name).toLowerCase();
-        if (ext == ".jpg" || ext == ".jpeg") {
-            fileType = "image/jpg";
-        } else {
-            fileType = "image/png";
-        }
-    }
-
     let bpp = projectStore.projectTypeTraits.isLVGL ? CF_TRUE_COLOR_ALPHA : 32;
 
     let name = getUniquePropertyValue(
@@ -722,14 +728,33 @@ export async function createBitmapFromFile(
     ) as string;
 
     try {
-        const arrayBuffer = await file.arrayBuffer();
-        const base64 = btoa(
-            String.fromCharCode.apply(null, new Uint8Array(arrayBuffer))
-        );
+
+        let image;
+
+        if (projectStore.project.settings.general.embedBitmaps) {
+            let fileType = file.type;
+            if (file.type == undefined) {
+                const ext = path.extname(file.name).toLowerCase();
+                if (ext == ".jpg" || ext == ".jpeg") {
+                    fileType = "image/jpg";
+                } else {
+                    fileType = "image/png";
+                }
+            }
+
+            const arrayBuffer = await file.arrayBuffer();
+            const base64 = btoa(
+                String.fromCharCode.apply(null, new Uint8Array(arrayBuffer))
+            );
+
+            image = `data:${fileType};base64,` + base64;
+        } else {
+            image = projectStore.getFilePathRelativeToProjectPath(filePath);
+        }
 
         const bitmapProperties: Partial<Bitmap> = {
             name,
-            image: `data:${fileType};base64,` + base64,
+            image,
             bpp,
             alwaysBuild: false
         };

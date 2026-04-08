@@ -161,7 +161,7 @@ interface ListNavigationProps {
     dragAndDropManager?: DragAndDropManagerClass;
     searchInput?: boolean;
     editable?: boolean;
-    onFilesDrop?: (files: File[]) => void;
+    onFilesDrop?: (files: File[], filePaths: string[]) => void;
     doNotUsePropertyGrid?: boolean;
     className?: string;
 }

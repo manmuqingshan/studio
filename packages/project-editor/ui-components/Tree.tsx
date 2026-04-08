@@ -2,6 +2,7 @@ import React from "react";
 import { observable, computed, action, makeObservable } from "mobx";
 import { observer } from "mobx-react";
 import classNames from "classnames";
+import { webUtils } from "electron";
 
 import { hasClass } from "eez-studio-shared/dom";
 
@@ -178,7 +179,7 @@ interface TreeProps {
     onFocus?: () => void;
     onEditItem?: (itemId: string) => void;
     renderItem?: (itemId: string) => React.ReactNode;
-    onFilesDrop?: (files: File[]) => void;
+    onFilesDrop?: (files: File[], filePaths: string[]) => void;
 }
 
 export const Tree = observer(
@@ -647,14 +648,16 @@ export const Tree = observer(
             if (isFileData(event)) {
                 if (this.props.onFilesDrop) {
                     const files: File[] = [];
+                    const filePaths: string[] = [];
                     for (let i = 0; i < event.dataTransfer.items.length; i++) {
                         const item = event.dataTransfer.items[i];
                         const file = item.getAsFile();
                         if (file) {
+                            filePaths.push(webUtils.getPathForFile(file));
                             files.push(file);
                         }
                     }
-                    this.props.onFilesDrop(files);
+                    this.props.onFilesDrop(files, filePaths);
                 }
                 return;
             }

@@ -12,7 +12,7 @@ interface ListProps {
     onFocus?: () => void;
     onEditItem?: (itemId: string) => void;
     renderItem?: (itemId: string) => React.ReactNode;
-    onFilesDrop?: (files: File[]) => void;
+    onFilesDrop?: (files: File[], filePaths: string[]) => void;
 }
 
 export const List = observer(

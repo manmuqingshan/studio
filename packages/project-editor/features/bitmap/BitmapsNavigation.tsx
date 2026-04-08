@@ -48,14 +48,16 @@ export const BitmapsTab = observer(
                         selectedObject={
                             this.context.navigationStore.selectedBitmapObject
                         }
-                        onFilesDrop={async files => {
+                        onFilesDrop={async (files, filePaths) => {
                             this.context.undoManager.setCombineCommands(true);
 
-                            for (const file of files) {
+                            for (let i = 0; i < files.length; i++) {
+                                const file = files[i];
                                 if (file.type.startsWith("image/")) {
                                     const bitmap = await createBitmapFromFile(
                                         this.context,
-                                        file
+                                        file,
+                                        filePaths[i]
                                     );
                                     if (bitmap) {
                                         this.context.addObject(

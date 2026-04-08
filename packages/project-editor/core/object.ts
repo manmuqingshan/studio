@@ -273,7 +273,7 @@ export interface PropertyInfo {
     checkboxHideLabel?: boolean;
     disableBitmapPreview?: boolean;
     inputPlaceholder?: (object: IEezObject) => string;
-    embeddedImage?: boolean;
+    embeddedImage?: boolean | ((object: IEezObject) => boolean);
 
     visitProperty?: (parentObject: IEezObject) => EezValueObject[];
 

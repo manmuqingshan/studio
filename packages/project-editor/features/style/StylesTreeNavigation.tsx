@@ -124,7 +124,7 @@ interface StylesTreeNavigationProps {
     dragAndDropManager?: DragAndDropManagerClass;
     searchInput?: boolean;
     editable?: boolean;
-    onFilesDrop?: (files: File[]) => void;
+    onFilesDrop?: (files: File[], filePaths: string[]) => void;
 }
 
 export const StylesTreeNavigation = observer(
