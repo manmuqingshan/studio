@@ -309,7 +309,7 @@ const version_9 = {
         const embeddedImage = await bitmap.getEmbeddedImage();
 
         try {
-            const img = await new LVGLImage().from_png(embeddedImage, TO_IMAGE_MODE[bitmap.bpp.toString()], 0x000000, false, false, false, true);
+            const img = await new LVGLImage().from_png(embeddedImage, TO_IMAGE_MODE[bitmap.bpp.toString()], 0x000000, false, false, false, false);
 
             let result;
             if (binFile) {

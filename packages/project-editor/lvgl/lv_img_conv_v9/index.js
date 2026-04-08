@@ -619,8 +619,40 @@ class LVGLImage {
   // Simple wrapper to call pngquant if available (uses pngquant-bin if installed)
   classPngQuant(ncolors=256, dither=true, execPath='', forceJS=false, forceBin=false) {
     let pngquantPath = null;
+
+    // Try to find pngquant binary by searching up the directory tree for node_modules
+    const findPngquantBinary = () => {
+      let searchDir = __dirname;
+      const maxLevels = 20;
+      const binaryName = process.platform === 'win32' ? 'pngquant.exe' : 'pngquant';
+
+      // First, check if we're in an Electron app and look for unpacked asar path
+      // This takes priority because executables can't run from inside .asar archive
+      for (let i = 0; i < maxLevels; i++) {
+        // Check for unpacked asar path first
+        const asarUnpackedPath = path.join(searchDir, '..', 'app.asar.unpacked', 'node_modules', 'pngquant-bin', 'vendor');
+        const asarPngquantExe = path.join(asarUnpackedPath, binaryName);
+        if (fs.existsSync(asarPngquantExe)) {
+          return asarPngquantExe;
+        }
+
+        // Then check regular node_modules, but skip if inside asar archive
+        const vendorPath = path.join(searchDir, 'node_modules', 'pngquant-bin', 'vendor');
+        const pngquantExe = path.join(vendorPath, binaryName);
+        if (fs.existsSync(pngquantExe) && !pngquantExe.includes('.asar')) {
+          return pngquantExe;
+        }
+
+        const parentDir = path.dirname(searchDir);
+        if (parentDir === searchDir) break; // reached filesystem root
+        searchDir = parentDir;
+      }
+
+      return null;
+    };
+
     try {
-      pngquantPath = require('pngquant-bin');
+      pngquantPath = findPngquantBinary();
     } catch (e) {
       pngquantPath = null;
     }
@@ -720,8 +752,17 @@ class LVGLImage {
         }
 
         // resolve binary path if pngquant-bin returned an object
-        let bin = pngquantPath || path.join(execPath, 'pngquant');
-        if (bin && typeof bin === 'object' && bin.default) bin = bin.default;
+        let bin = pngquantPath;
+        if (!bin && execPath) bin = path.join(execPath, process.platform === 'win32' ? 'pngquant.exe' : 'pngquant');
+        if (bin && typeof bin === 'object') {
+          bin = bin.default || bin.path || null;
+        }
+
+        if (!bin) {
+          console.warn('pngquant binary path could not be resolved; falling back to JS quantization');
+          // Fall back to JS quantization by returning null to trigger the fallback condition
+          return null;
+        }
 
         // Handle data URIs and buffers by writing to a temporary file
         let inputFile = filename;
@@ -746,12 +787,21 @@ class LVGLImage {
           args.push(String(ncolors));
           args.push('--force', '--output', '-', '--', inputFile);
 
+          console.debug(`pngquant binary: ${bin}`);
+          console.debug(`pngquant args: ${args.join(' ')}`);
+
           const res = child_process.spawnSync(bin, args);
           if (res.status !== 0) {
-            const err = res.stderr ? res.stderr.toString() : 'unknown error';
-            throw new Error(`pngquant conversion failed: ${err}`);
+            const err = res.stderr ? res.stderr.toString() : (res.error ? res.error.message : 'unknown error');
+            console.warn(`pngquant conversion failed (status: ${res.status}, error: ${err}); falling back to JS quantization`);
+            // Return null to trigger fallback to JS quantization
+            return null;
           }
           return res.stdout;
+        } catch (e) {
+          console.warn(`pngquant error (${e.message}); falling back to JS quantization`);
+          // Return null to trigger fallback to JS quantization
+          return null;
         } finally {
           // Clean up temporary file
           if (tempFile && fs.existsSync(tempFile)) {
@@ -818,12 +868,22 @@ class LVGLImage {
     let quantResult = null;
     const palette_len = png.palette ? png.palette.length : 0;
     if (!png.palette || (!auto_cf && palette_len !== ncolors(cf))) {
-      const q = this.classPngQuant(ncolors(cf), true, '', this.forceJSQuant, this.forceUsePngquant);
-      const res = q.convert(filename);
+      let q = this.classPngQuant(ncolors(cf), true, '', this.forceJSQuant, this.forceUsePngquant);
+      let res = q.convert(filename);
+
+      // If pngquant failed (returned null), fall back to JS quantization
+      if (res === null && !this.forceJSQuant) {
+        console.warn('pngquant unavailable or failed; using JS quantization as fallback');
+        q = this.classPngQuant(ncolors(cf), true, '', true, false); // Force JS quantization
+        res = q.convert(filename);
+      }
+
       if (Buffer.isBuffer(res)) {
         png = PNG.sync.read(res, {inputHasAlpha:true});
       } else if (res && res.palette && res.rows) {
         quantResult = res; // { palette: [[r,g,b,a],..], rows: [ [idx,...], ... ], width, height }
+      } else if (res === null) {
+        throw new Error('both pngquant and JS quantization failed');
       } else {
         throw new Error('pngquant conversion returned unexpected result');
       }

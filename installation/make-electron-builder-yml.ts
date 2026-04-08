@@ -105,6 +105,10 @@ files.push(
 
         files,
 
+        asarUnpack: [
+            "node_modules/pngquant-bin/**"
+        ],
+
         extraResources: await getExtraResource(),
 
         fileAssociations: [
