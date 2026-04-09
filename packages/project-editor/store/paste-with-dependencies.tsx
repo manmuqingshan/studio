@@ -1881,6 +1881,9 @@ export function canPasteWithDependencies(
         if (serializedData.object instanceof ProjectEditor.BuildFileClass) {
             return false;
         }
+        if (serializedData.object instanceof ProjectEditor.ThemeColorsClipboardDataClass) {
+            return false;
+        }
     } else if (serializedData.objects) {
         if (
             !serializedData.objects.find(

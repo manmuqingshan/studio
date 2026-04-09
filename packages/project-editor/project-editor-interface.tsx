@@ -108,7 +108,7 @@ import type { Style } from "project-editor/features/style/style";
 import type { evalProperty } from "project-editor/flow/helper";
 import type { migrateLvglVersion } from "project-editor/lvgl/migrate";
 import type { FlowTabState } from "project-editor/flow/flow-tab-state";
-import type { Color } from "project-editor/features/style/theme";
+import type { Color, ThemeColorsClipboardData } from "project-editor/features/style/theme";
 import type { UserProperty } from "project-editor/flow/user-property";
 import type { LVGLActionComponent } from "project-editor/lvgl/actions";
 import type { FlowEditor } from "project-editor/flow/editor/editor";
@@ -157,6 +157,7 @@ export interface IProjectEditor {
     BitmapClass: typeof Bitmap;
     FontClass: typeof Font;
     ColorClass: typeof Color;
+    ThemeColorsClipboardDataClass: typeof ThemeColorsClipboardData;
     LVGLWidgetClass: typeof LVGLWidget;
     LVGLScreenWidgetClass: typeof LVGLScreenWidget;
     LVGLContainerWidgetClass: typeof LVGLContainerWidget;

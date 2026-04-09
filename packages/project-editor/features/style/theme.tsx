@@ -15,13 +15,16 @@ import {
     registerClass,
     PropertyType,
     getParent,
-    IMessage
+    IMessage,
+    setParent,
+    SerializedData
 } from "project-editor/core/object";
 import {
     ProjectStore,
     IContextMenuContext,
     getProjectStore,
-    createObject
+    createObject,
+    objectToClipboardData
 } from "project-editor/store";
 import { replaceObjectReference } from "project-editor/core/search";
 
@@ -88,7 +91,7 @@ const ColorItem = observer(
         }
 
         get themeColor() {
-            return this.selectedTheme.colors[this.colorIndex];
+            return this.selectedTheme?.colors[this.colorIndex]??"#000000";
         }
 
         changedThemeColor: string | undefined;
@@ -463,20 +466,12 @@ export class Color extends EezObject {
             return color;
         },
 
-        onAfterPaste: (newColor: Color, fromColor: Color) => {
-            const project = ProjectEditor.getProject(newColor);
-
-            const fromTheme =
-                project._store.navigationStore.selectedThemeObject.get() as Theme;
-            if (fromTheme) {
-                for (const theme of project.themes) {
-                    project.setThemeColor(
-                        theme.objID,
-                        newColor.objID,
-                        project.getThemeColor(fromTheme.objID, fromColor.objID)
-                    );
-                }
-            }
+        objectsToClipboardData: (colors: Color[]) => {
+            const projectStore = ProjectEditor.getProjectStore(colors[0]);
+            const themeColorsClipboardData = new ThemeColorsClipboardData();
+            themeColorsClipboardData.addColors(projectStore, colors);
+            setParent(themeColorsClipboardData, projectStore.project);
+            return objectToClipboardData(projectStore, themeColorsClipboardData);
         },
 
         extendContextMenu: (
@@ -613,16 +608,12 @@ export class Theme extends EezObject implements ITheme {
             return theme;
         },
 
-        onAfterPaste: (newTheme: Theme, fromTheme: Theme) => {
-            const project = ProjectEditor.getProject(newTheme);
-
-            for (const color of project.colors) {
-                project.setThemeColor(
-                    newTheme.objID,
-                    color.objID,
-                    project.getThemeColor(fromTheme.objID, color.objID)
-                );
-            }
+        objectsToClipboardData: (themes: Theme[]) => {
+            const projectStore = ProjectEditor.getProjectStore(themes[0]);
+            const themeColorsClipboardData = new ThemeColorsClipboardData();
+            themeColorsClipboardData.addThemes(projectStore, themes);
+            setParent(themeColorsClipboardData, projectStore.project);
+            return objectToClipboardData(projectStore, themeColorsClipboardData);
         }
     };
 
@@ -664,6 +655,180 @@ export class Theme extends EezObject implements ITheme {
 }
 
 registerClass("Theme", Theme);
+
+////////////////////////////////////////////////////////////////////////////////
+
+export class ThemeColorsClipboardData extends EezObject {
+    data: {
+        kind: "themes" | "colors";
+        themes: {
+            name: string;
+            colors: string[];
+        }[];
+        colorNames: string[];
+    };
+
+    static classInfo: ClassInfo = {
+        properties: [
+            {
+                name: "data",
+                type: PropertyType.Any
+            }
+        ],
+
+        pasteItemHook: (
+            object: IEezObject,
+            clipboardData: {
+                serializedData: SerializedData;
+                pastePlace: EezObject;
+            }
+        ) => {
+            const projectStore = ProjectEditor.getProjectStore(
+                clipboardData.pastePlace
+            );
+            const themeColorsClipboardData = clipboardData.serializedData
+                .object as ThemeColorsClipboardData;
+
+            let closeCombineCommands = false;
+            if (!projectStore.undoManager.combineCommands) {
+                projectStore.undoManager.setCombineCommands(true);
+                closeCombineCommands = true;
+            }
+
+            const newObjects: EezObject[] = [];
+
+            if (themeColorsClipboardData.data.kind == "themes") {
+                for (const colorName of themeColorsClipboardData.data.colorNames) {
+                    const color = projectStore.project.colors.find(
+                        color => color.name == colorName
+                    );
+                    if (!color) {
+                        projectStore.addObject(
+                            projectStore.project.colors,
+                            createObject<Color>(
+                                projectStore,
+                                {
+                                    name: colorName
+                                },
+                                Color
+                            )
+                        );
+                    }
+                }
+
+                for (const theme of themeColorsClipboardData.data.themes) {
+                    const newTheme = projectStore.addObject(
+                        projectStore.project.themes,
+                        createObject<Theme>(
+                            projectStore,
+                            {
+                                name: theme.name
+                            },
+                            Theme
+                        )
+                    );
+
+                    newObjects.push(newTheme);
+
+                    for (const color of projectStore.project.colors) {
+                        const index =
+                            themeColorsClipboardData.data.colorNames.findIndex(
+                                colorName => colorName == color.name
+                            );
+                        projectStore.project.setThemeColor(
+                            newTheme.objID,
+                            color.objID,
+                            index != -1 ? theme.colors[index] : "#000000"
+                        );
+                    }
+                }
+            } else {
+                for (const theme of themeColorsClipboardData.data.themes) {
+                    const theme2 = projectStore.project.themes.find(
+                        theme2 => theme2.name == theme.name
+                    );
+                    if (!theme2) {
+                        projectStore.addObject(
+                            projectStore.project.themes,
+                            createObject<Theme>(
+                                projectStore,
+                                {
+                                    name: theme.name
+                                },
+                                Theme
+                            )
+                        );
+                    }
+                }
+
+                for (
+                    let colorIndex = 0;
+                    colorIndex < themeColorsClipboardData.data.colorNames.length;
+                    colorIndex++
+                ) {
+                    const colorName =
+                        themeColorsClipboardData.data.colorNames[colorIndex];
+
+                    const newColor = projectStore.addObject(
+                        projectStore.project.colors,
+                        createObject<Color>(
+                            projectStore,
+                            {
+                                name: colorName
+                            },
+                            Color
+                        )
+                    );
+
+                    newObjects.push(newColor);
+
+                    for (const theme of themeColorsClipboardData.data.themes) {
+                        const theme2 = projectStore.project.themes.find(
+                            theme2 => theme2.name == theme.name
+                        )!;
+                        projectStore.project.setThemeColor(
+                            theme2.objID,
+                            newColor.objID,
+                            theme.colors[colorIndex]
+                        );
+                    }
+                }
+            }
+
+            if (closeCombineCommands) {
+                projectStore.undoManager.setCombineCommands(false);
+            }
+
+            return newObjects;
+        }
+    };
+
+    addThemes(projectStore: ProjectStore, themes: Theme[]) {
+        this.data = {
+            kind: "themes",
+            themes: themes.map(theme => ({
+                name: theme.name,
+                colors: theme.colors
+            })),
+            colorNames: projectStore.project.colors.map(color => color.name)
+        };
+    }
+
+    addColors(projectStore: ProjectStore, colors: Color[]) {
+        this.data = {
+            kind: "colors",
+            themes: projectStore.project.themes.map(theme => ({
+                name: theme.name,
+                colors: colors.map(color =>
+                    projectStore.project.getThemeColor(theme.objID, color.objID)
+                )
+            })),
+            colorNames: colors.map(color => color.name)
+        };
+    }
+}
+
+registerClass("ThemeColorsClipboardData", ThemeColorsClipboardData);
 
 ////////////////////////////////////////////////////////////////////////////////
 

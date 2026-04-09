@@ -20,6 +20,7 @@ import {
     SerializedData,
     PropertyInfo
 } from "project-editor/core/object";
+import { ProjectEditor } from "project-editor/project-editor-interface";
 
 import {
     createObject,
@@ -336,6 +337,10 @@ export function findPastePlaceInsideAndOutside(
     }
 
     if (serializedData.object) {
+        if (serializedData.object instanceof ProjectEditor.ThemeColorsClipboardDataClass) {
+            return ProjectEditor.getProject(object);
+        }
+
         if (!canContain(object, serializedData.object)) {
             return undefined;
         }

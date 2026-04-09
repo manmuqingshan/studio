@@ -132,7 +132,7 @@ import { Style } from "project-editor/features/style/style";
 import { evalProperty } from "project-editor/flow/helper";
 import { migrateLvglVersion } from "./lvgl/migrate";
 import { FlowTabState } from "project-editor/flow/flow-tab-state";
-import { Color } from "project-editor/features/style/theme";
+import { Color, ThemeColorsClipboardData } from "project-editor/features/style/theme";
 import { UserProperty } from "./flow/user-property";
 import { LVGLActionComponent } from "project-editor/lvgl/actions";
 import { FlowEditor } from "project-editor/flow/editor/editor";
@@ -201,6 +201,7 @@ export async function createProjectEditor(
         BitmapClass: Bitmap,
         FontClass: Font,
         ColorClass: Color,
+        ThemeColorsClipboardDataClass: ThemeColorsClipboardData,
         LVGLWidgetClass: LVGLWidget,
         LVGLScreenWidgetClass: LVGLScreenWidget,
         LVGLContainerWidgetClass: LVGLContainerWidget,
