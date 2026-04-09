@@ -4904,6 +4904,7 @@ export function checkProperty(
             }
         } else if (
             !isPropertyOptional(object, propertyInfo) &&
+            (!(object instanceof ProjectEditor.WidgetClass) || object instanceof ProjectEditor.LVGLWidgetClass) &&
             !isPropertyHidden(object, propertyInfo)
         ) {
             messages.push(propertyNotSetMessage(object, propertyInfo.name));
@@ -4940,6 +4941,7 @@ export function checkProperty(
             }
         } else if (
             !isPropertyOptional(object, propertyInfo) &&
+            (!(object instanceof ProjectEditor.WidgetClass) || object instanceof ProjectEditor.LVGLWidgetClass) &&
             !isPropertyHidden(object, propertyInfo)
         ) {
             messages.push(propertyNotSetMessage(object, propertyInfo.name));
@@ -4964,6 +4966,7 @@ export function checkProperty(
             }
         } else if (
             !isPropertyOptional(object, propertyInfo) &&
+            (!(object instanceof ProjectEditor.WidgetClass) || object instanceof ProjectEditor.LVGLWidgetClass) &&
             !isPropertyHidden(object, propertyInfo)
         ) {
             messages.push(propertyNotSetMessage(object, propertyInfo.name));
